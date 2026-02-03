@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>
+        eCommerce Dashboard | TailAdmin - Tailwind CSS Admin Dashboard Template
+    </title>
+    <link rel="icon" href="favicon.ico">
+    <link href="/src/css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.prod.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/apexcharts/dist/apexcharts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue3-apexcharts@1.10.0/dist/vue3-apexcharts.umd.cjs"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/jsvectormap"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsvectormap/dist/maps/world.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-flatpickr-component/dist/vue-flatpickr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <!-- <base href="/src/" /> -->
+</head>
+
+<body class="dark:bg-gray-900">
+    <div id="app"></div>
+    <script>
+        window.APP_VERSION = '2026.02.01'; // change on every deployment
+        const v = window.APP_VERSION
+        function lazy(page) {
+            return () => import(`${page}.js?v=${v}`)
+        }
+        window.lazyLoad = lazy;
+    </script>
+    <script type="module" src="/src/js/main.js"></script>
+</body>
+
+</html>
