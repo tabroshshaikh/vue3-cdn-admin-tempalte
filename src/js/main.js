@@ -3,6 +3,7 @@ import App from './App.js';
 import router from './router/index.js';
 
 const { createApp } = Vue;
+const v = window.APP_VERSION;
 
 const app = createApp(App);
 

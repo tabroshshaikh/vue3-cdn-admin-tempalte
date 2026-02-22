@@ -126,19 +126,27 @@ const router = createRouter({
             },
         },
         {
-            path: '/signin',
-            name: 'Signin',
-            component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
+            path: '/login',
+            name: 'Login',
+            component: () => import('/src/js/views/Auth/Login.js?v=' + v),
             meta: {
-                title: 'Signin',
+                title: 'Login',
             },
         },
         {
-            path: '/signup',
-            name: 'Signup',
-            component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
+            path: '/Register',
+            name: 'Register',
+            component: () => import('/src/js/views/Auth/Register.js?v=' + v),
             meta: {
-                title: 'Signup',
+                title: 'Register',
+            },
+        },
+        {
+            path: '/Forgot-password',
+            name: 'Signup',
+            component: () => import('/src/js/views/Auth/forgot-password.js?v=' + v),
+            meta: {
+                title: 'Forgot-password',
             },
         },
     ],
