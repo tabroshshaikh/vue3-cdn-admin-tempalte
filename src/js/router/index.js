@@ -20,6 +20,15 @@ const router = createRouter({
             },
         },
         {
+
+            path: '/Dashboard',
+            name: 'Dashboard',
+            component: () => import('/src/js/views/Ecommerce.js?v=' + v),
+            meta: {
+                title: 'eCommerce Dashboard',
+            },
+        },
+        {
             path: '/calendar',
             name: 'Calendar',
             component: () => import('/src/js/views/Others/Calendar.js?v=' + v),

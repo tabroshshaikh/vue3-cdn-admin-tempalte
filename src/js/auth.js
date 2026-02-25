@@ -3,9 +3,10 @@ const IS_USER_LOGGED_IN = 'is_user_logged_in';
 const SESSION_EXPIRY_KEY = 'session_expiry';
 
 const auth = {
-  // Login function
+  //   function
   login(data) {
     localStorage.setItem(AUTH_TOKEN_KEY, data.access_token);
+    localStorage.setItem(IS_USER_LOGGED_IN, 'true');
     this.setCookie('token', data.refrsh_token, 15); // Set cookie for 7 days
   },
 
@@ -13,12 +14,16 @@ const auth = {
   logout() {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(IS_USER_LOGGED_IN);
+    deleteCookie('token');
     window.location.href = '/login';
   },
   // set cokkie function
   setCookie(name, value, days) {
     const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
     document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+  },
+  deleteCookie(name) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
   },
   // Get cookie function
   getCookie(name) {
