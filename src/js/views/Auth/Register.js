@@ -4,7 +4,7 @@ const { default: auth } = await import(`/src/js/auth.js?v=${v}`);
 
 export default {
   template: `
-  <div class="min-h-screen">
+  <div v-if="!isCheckingAuth" class="min-h-screen">
     <main>
     <div class="relative p-6 bg-white z-1 dark:bg-gray-900 sm:p-0">
       <div class="relative flex flex-col justify-center w-full h-screen lg:flex-row dark:bg-gray-900">
@@ -188,6 +188,7 @@ export default {
   `,
   data() {
     return {
+      isCheckingAuth: true,
       name: '',
       email: '',
       password: '',
@@ -200,6 +201,13 @@ export default {
         password: { status: null, message: "" },
         terms: { status: null, message: "" }
       }
+    }
+  },
+  created() {
+    if (auth.isAuthenticated()) {
+      window.location.href = '/dashboard';
+    } else {
+      this.isCheckingAuth = false;
     }
   },
   methods: {
