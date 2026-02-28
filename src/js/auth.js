@@ -53,11 +53,11 @@ const auth = {
     const token = this.getToken();
     if (!token) return false;
 
-    const expiry = localStorage.getItem(SESSION_EXPIRY_KEY);
-    if (expiry && Date.now() > parseInt(expiry)) {
-      this.logout();
-      return false;
-    }
+    // const expiry = localStorage.getItem(SESSION_EXPIRY_KEY);
+    // if (expiry && Date.now() > parseInt(expiry)) {
+    //   this.logout();
+    //   return false;
+    // }
 
     return true;
   },
