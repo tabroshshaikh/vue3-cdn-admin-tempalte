@@ -3,20 +3,8 @@ const { ref, computed } = Vue;
 const { useRoute } = VueRouter;
 
 import {
-    GridIcon,
-    CalenderIcon,
-    UserCircleIcon,
-    ChatIcon,
-    MailIcon,
-    DocsIcon,
-    PieChartIcon,
     ChevronDownIcon,
     HorizontalDots,
-    PageIcon,
-    TableIcon,
-    ListIcon,
-    PlugInIcon,
-    BoxCubeIcon,
 } from "../../icons/index.js";
 import SidebarWidget from "./SidebarWidget.js";
 import { useSidebar } from "../../composables/useSidebar.js";
@@ -90,62 +78,23 @@ export default {
               ]"
             >
               <template v-if="isExpanded || isHovered || isMobileOpen">
-                {{ menuGroup.title }}
+                {{ menuGroup.section }}
               </template>
               <HorizontalDots v-else />
             </h2>
             <ul class="flex flex-col gap-4">
-              <li v-for="(item, index) in menuGroup.items" :key="item.name">
-                <button
-                  v-if="item.subItems"
-                  @click="toggleSubmenu(groupIndex, index)"
-                  :class="[
-                    'menu-item group w-full',
-                    {
-                      'menu-item-active': isSubmenuOpen(groupIndex, index),
-                      'menu-item-inactive': !isSubmenuOpen(groupIndex, index),
-                    },
-                    !isExpanded && !isHovered
-                      ? 'lg:justify-center'
-                      : 'lg:justify-start',
-                  ]"
-                >
-                  <span
-                    :class="[
-                      isSubmenuOpen(groupIndex, index)
-                        ? 'menu-item-icon-active'
-                        : 'menu-item-icon-inactive',
-                    ]"
-                  >
-                    <component :is="item.icon" />
-                  </span>
-                  <span
-                    v-if="isExpanded || isHovered || isMobileOpen"
-                    class="menu-item-text"
-                    >{{ item.name }}</span
-                  >
-                  <ChevronDownIcon
-                    v-if="isExpanded || isHovered || isMobileOpen"
-                    :class="[
-                      'ml-auto w-5 h-5 transition-transform duration-200',
-                      {
-                        'rotate-180 text-brand-500': isSubmenuOpen(
-                          groupIndex,
-                          index
-                        ),
-                      },
-                    ]"
-                  />
-                </button>
+              <li v-for="(item, index) in menuGroup.items" :key="item.label">
                 <router-link
-                  v-else-if="item.path"
                   :to="item.path"
                   :class="[
-                    'menu-item group',
+                    'menu-item group w-full',
                     {
                       'menu-item-active': isActive(item.path),
                       'menu-item-inactive': !isActive(item.path),
                     },
+                    !isExpanded && !isHovered
+                      ? 'lg:justify-center'
+                      : 'lg:justify-start',
                   ]"
                 >
                   <span
@@ -155,88 +104,31 @@ export default {
                         : 'menu-item-icon-inactive',
                     ]"
                   >
-                    <component :is="item.icon" />
+                    {{ item.icon }}
                   </span>
                   <span
                     v-if="isExpanded || isHovered || isMobileOpen"
                     class="menu-item-text"
-                    >{{ item.name }}</span
                   >
+                    {{ item.label }}
+                  </span>
+                  <span
+                    v-if="item.badge && (isExpanded || isHovered || isMobileOpen)"
+                    :class="[
+                      'ml-auto px-2 py-1 text-xs rounded',
+                      isActive(item.path)
+                        ? 'bg-brand-500 text-white'
+                        : 'bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                    ]"
+                  >
+                    {{ item.badge }}
+                  </span>
                 </router-link>
-                <transition
-                  @enter="startTransition"
-                  @after-enter="endTransition"
-                  @before-leave="startTransition"
-                  @after-leave="endTransition"
-                >
-                  <div
-                    v-show="
-                      isSubmenuOpen(groupIndex, index) &&
-                      (isExpanded || isHovered || isMobileOpen)
-                    "
-                  >
-                    <ul class="mt-2 space-y-1 ml-9">
-                      <li v-for="subItem in item.subItems" :key="subItem.name">
-                        <router-link
-                          :to="subItem.path"
-                          :class="[
-                            'menu-dropdown-item',
-                            {
-                              'menu-dropdown-item-active': isActive(
-                                subItem.path
-                              ),
-                              'menu-dropdown-item-inactive': !isActive(
-                                subItem.path
-                              ),
-                            },
-                          ]"
-                        >
-                          {{ subItem.name }}
-                          <span class="flex items-center gap-1 ml-auto">
-                            <span
-                              v-if="subItem.new"
-                              :class="[
-                                'menu-dropdown-badge',
-                                {
-                                  'menu-dropdown-badge-active': isActive(
-                                    subItem.path
-                                  ),
-                                  'menu-dropdown-badge-inactive': !isActive(
-                                    subItem.path
-                                  ),
-                                },
-                              ]"
-                            >
-                              new
-                            </span>
-                            <span
-                              v-if="subItem.pro"
-                              :class="[
-                                'menu-dropdown-badge',
-                                {
-                                  'menu-dropdown-badge-active': isActive(
-                                    subItem.path
-                                  ),
-                                  'menu-dropdown-badge-inactive': !isActive(
-                                    subItem.path
-                                  ),
-                                },
-                              ]"
-                            >
-                              pro
-                            </span>
-                          </span>
-                        </router-link>
-                      </li>
-                    </ul>
-                  </div>
-                </transition>
               </li>
             </ul>
           </div>
         </div>
       </nav>
-      <SidebarWidget v-if="isExpanded || isHovered || isMobileOpen" />
     </div>
   </aside>
     `,
@@ -245,119 +137,64 @@ export default {
         const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar();
 
         const menuGroups = [
+            // {
+            //     section: "OVERVIEW",
+            //     items: [
+            //         { icon: "⚡", label: "Dashboard", path: "/", badge: null, active: true },
+            //         { icon: "📊", label: "Analytics", path: "/analytics", badge: "NEW", active: false },
+            //     ],
+            // },
+
             {
-                title: "Menu",
+                section: "STORE",
                 items: [
-                    {
-                        icon: GridIcon,
-                        name: "Dashboard",
-                        subItems: [{ name: "Ecommerce", path: "/", pro: false }],
-                    },
-                    {
-                        icon: CalenderIcon,
-                        name: "Calendar",
-                        path: "/calendar",
-                    },
-                    {
-                        icon: UserCircleIcon,
-                        name: "User Profile",
-                        path: "/profile",
-                    },
-                    {
-                        name: "Forms",
-                        icon: ListIcon,
-                        subItems: [
-                            { name: "Form Elements", path: "/form-elements", pro: false },
-                        ],
-                    },
-                    {
-                        name: "Tables",
-                        icon: TableIcon,
-                        subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-                    },
-                    {
-                        name: "Pages",
-                        icon: PageIcon,
-                        subItems: [
-                            { name: "Blank Page", path: "/blank", pro: false },
-                            { name: "404 Page", path: "/error-404", pro: false },
-                        ],
-                    },
+                    { icon: "👤", label: "Profile", path: "/profile", badge: null, active: false },
+                    { icon: "📄", label: "Link in Bio", path: "/Landing-Page", badge: null, active: false },
+                    { icon: "🎨", label: "Themes & Design", path: "/Design", badge: null, active: false },
+
                 ],
             },
             {
-                title: "Others",
+                section: "Products",
                 items: [
-                    {
-                        icon: PieChartIcon,
-                        name: "Charts",
-                        subItems: [
-                            { name: "Line Chart", path: "/line-chart", pro: false },
-                            { name: "Bar Chart", path: "/bar-chart", pro: false },
-                        ],
-                    },
-                    {
-                        icon: BoxCubeIcon,
-                        name: "Ui Elements",
-                        subItems: [
-                            { name: "Alerts", path: "/alerts", pro: false },
-                            { name: "Avatars", path: "/avatars", pro: false },
-                            { name: "Badge", path: "/badge", pro: false },
-                            { name: "Buttons", path: "/buttons", pro: false },
-                            { name: "Images", path: "/images", pro: false },
-                            { name: "Videos", path: "/videos", pro: false },
-                        ],
-                    },
-                    {
-                        icon: PlugInIcon,
-                        name: "Authentication",
-                        subItems: [
-                            { name: "Signin", path: "/signin", pro: false },
-                            { name: "Signup", path: "/signup", pro: false },
-                        ],
-                    },
+                    { icon: "🛍️", label: "Products", path: "/products", badge: "12", active: false },
+                    { icon: "🎓", label: "Courses", path: "/courses", badge: null, active: false },
+                    { icon: "📦", label: "Digital Downloads", path: "/digital-downloads", badge: null, active: false },
+                    { icon: "♾️", label: "Memberships", path: "/memberships", badge: "3", active: false },
+                    { icon: "📅", label: "Bookings", path: "/bookings", badge: null, active: false },
+                    { icon: "🎟️", label: "Webinars", path: "/webinars", badge: "BETA", active: false },
+                ],
+            },
+            {
+                section: "AUDIENCE",
+                items: [
+                    { icon: "👥", label: "Contacts", path: "/contacts", badge: "1.2k", active: false },
+                    { icon: "📧", label: "Email Campaigns", path: "/email-campaigns", badge: null, active: false },
+                    { icon: "🏷️", label: "Segments & Tags", path: "/segments-tags", badge: null, active: false },
+                    { icon: "💬", label: "Community", path: "/community", badge: "5", active: false },
+                ],
+            },
+            {
+                section: "REVENUE",
+                items: [
+                    { icon: "💰", label: "Payments", path: "/payments", badge: null, active: false },
+                    { icon: "🧾", label: "Invoices", path: "/invoices", badge: null, active: false },
+                    { icon: "🎁", label: "Coupons & Offers", path: "/coupons-offers", badge: null, active: false },
+                    { icon: "🤝", label: "Affiliates", path: "/affiliates", badge: "NEW", active: false },
+                ],
+            },
+            {
+                section: "SETTINGS",
+                items: [
+                    { icon: "⚙️", label: "General", path: "/settings/general", badge: null, active: false },
+                    { icon: "🌐", label: "Domain & SEO", path: "/settings/domain-seo", badge: null, active: false },
+                    { icon: "🔌", label: "Integrations", path: "/settings/integrations", badge: null, active: false },
+                    { icon: "💳", label: "Billing & Plan", path: "/settings/billing-plan", badge: null, active: false },
                 ],
             },
         ];
 
         const isActive = (path) => route.path === path;
-
-    const toggleSubmenu = (groupIndex, itemIndex) => {
-        const key = `${groupIndex}-${itemIndex}`;
-        openSubmenu.value = openSubmenu.value === key ? null : key;
-    };
-
-    const isAnySubmenuRouteActive = computed(() => {
-      return menuGroups.some((group) =>
-        group.items.some(
-          (item) =>
-            item.subItems && item.subItems.some((subItem) => isActive(subItem.path))
-        )
-      );
-    });
-
-    const isSubmenuOpen = (groupIndex, itemIndex) => {
-      const key = `${groupIndex}-${itemIndex}`;
-      return (
-        openSubmenu.value === key ||
-        (isAnySubmenuRouteActive.value &&
-          menuGroups[groupIndex].items[itemIndex].subItems?.some((subItem) =>
-            isActive(subItem.path)
-          ))
-      );
-    };
-
-    const startTransition = (el) => {
-      el.style.height = "auto";
-      const height = el.scrollHeight;
-      el.style.height = "0px";
-      el.offsetHeight; // force reflow
-      el.style.height = height + "px";
-    };
-
-    const endTransition = (el) => {
-      el.style.height = "";
-    };
 
     return {
       isExpanded,
@@ -366,10 +203,6 @@ export default {
       openSubmenu,
       menuGroups,
       isActive,
-      toggleSubmenu,
-      isSubmenuOpen,
-      startTransition,
-      endTransition
     };
   }
 }

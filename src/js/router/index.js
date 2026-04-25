@@ -48,117 +48,27 @@ const router = createRouter({
                     },
                 },
                 {
-                    path: 'Dashboard',
-                    name: 'Dashboard',
-                    component: () => import('/src/js/views/Ecommerce.js?v=' + v),
-                    meta: {
-                        title: 'eCommerce Dashboard',
-                    },
-                },
-                {
-                    path: 'calendar',
-                    name: 'Calendar',
-                    component: () => import('/src/js/views/Others/Calendar.js?v=' + v),
-                    meta: {
-                        title: 'Calendar',
-                    },
-                },
-                {
                     path: 'profile',
                     name: 'Profile',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
+                    component: () => import('/src/js/views/Profile.js?v=' + v),
                     meta: {
-                        title: 'Profile',
+                        title: 'Store Profile',
+                    },
+                },
+                {
+                    path: 'profile2',
+                    name: 'Profile2',
+                    component: () => import('/src/js/views/Profile2.js?v=' + v),
+                    meta: {
+                        title: 'Store Profile',
                     },
                 },
                 {
                     path: 'form-elements',
-                    name: 'Form Elements',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
+                    name: 'FormElements',
+                    component: () => import('/src/js/views/FormElements.js?v=' + v),
                     meta: {
                         title: 'Form Elements',
-                    },
-                },
-                {
-                    path: 'basic-tables',
-                    name: 'Basic Tables',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                    meta: {
-                        title: 'Basic Tables',
-                    },
-                },
-                {
-                    path: 'line-chart',
-                    name: 'Line Chart',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                },
-                {
-                    path: 'bar-chart',
-                    name: 'Bar Chart',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                },
-                {
-                    path: 'alerts',
-                    name: 'Alerts',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                    meta: {
-                        title: 'Alerts',
-                    },
-                },
-                {
-                    path: 'avatars',
-                    name: 'Avatars',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                    meta: {
-                        title: 'Avatars',
-                    },
-                },
-                {
-                    path: 'badge',
-                    name: 'Badge',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                    meta: {
-                        title: 'Badge',
-                    },
-                },
-                {
-                    path: 'buttons',
-                    name: 'Buttons',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                    meta: {
-                        title: 'Buttons',
-                    },
-                },
-                {
-                    path: 'images',
-                    name: 'Images',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                    meta: {
-                        title: 'Images',
-                    },
-                },
-                {
-                    path: 'videos',
-                    name: 'Videos',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                    meta: {
-                        title: 'Videos',
-                    },
-                },
-                {
-                    path: 'blank',
-                    name: 'Blank',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                    meta: {
-                        title: 'Blank',
-                    },
-                },
-                {
-                    path: 'error-404',
-                    name: '404 Error',
-                    component: () => import('/src/js/views/Pages/BlankPage.js?v=' + v),
-                    meta: {
-                        title: '404 Error',
                     },
                 },
             ],
