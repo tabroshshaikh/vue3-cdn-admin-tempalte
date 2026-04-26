@@ -3,8 +3,8 @@ import api from './axios.js';
 import { env } from '../config/env.js';
 
 export const webService = {
-  get: (endpoint) => api.get(`${env.BASE_URL}${endpoint}`),
-  post: (endpoint, data) => api.post(`${env.BASE_URL}${endpoint}`, data),
-  put: (endpoint, data) => api.put(`${env.BASE_URL}${endpoint}`, data),
-  delete: (endpoint) => api.delete(`${env.BASE_URL}${endpoint}`),
+  get: (endpoint, options = {}) => api.get(`${env.BASE_URL}${endpoint}`, options),
+  post: (endpoint, data, options = {}) => api.post(`${env.BASE_URL}${endpoint}`, data, options),
+  put: (endpoint, data, options = {}) => api.put(`${env.BASE_URL}${endpoint}`, data, options),
+  delete: (endpoint, options = {}) => api.delete(`${env.BASE_URL}${endpoint}`, options),
 };
