@@ -56,11 +56,27 @@ const router = createRouter({
                     },
                 },
                 {
-                    path: 'profile2',
-                    name: 'Profile2',
-                    component: () => import('/src/js/views/Profile2.js?v=' + v),
+                    path: 'products',
+                    name: 'Products',
+                    component: () => import('/src/js/views/Products.js?v=' + v),
                     meta: {
-                        title: 'Store Profile',
+                        title: 'Products',
+                    },
+                },
+                {
+                    path: 'add-product',
+                    name: 'Add Product',
+                    component: () => import('/src/js/views/Add_Product.js?v=' + v),
+                    meta: {
+                        title: 'Create New Product',
+                    },
+                },
+                {
+                    path: 'product/:product_uuid',
+                    name: 'Edit Products',
+                    component: () => import('/src/js/views/Edit_Products.js?v=' + v),
+                    meta: {
+                        title: 'Edit Products',
                     },
                 },
                 {
