@@ -19,11 +19,11 @@ export default {
     template: `
   <aside
     :class="[
-      'sidebar fixed left-0 top-0 z-9999 flex h-screen w-[290px] flex-col overflow-y-hidden border-r border-gray-200 bg-white px-5 dark:border-gray-800 dark:bg-black lg:static lg:translate-x-0',
+      'sidebar fixed left-0 top-0 z-9999 flex h-screen w-[252px] flex-col overflow-y-hidden border-r border-gray-200 bg-white px-5 dark:border-gray-800 dark:bg-black lg:static lg:translate-x-0',
       {
-        'lg:w-[290px]': isExpanded || isMobileOpen || isHovered,
+        'lg:w-[252px]': isExpanded || isMobileOpen || isHovered,
         'lg:w-[90px]': !isExpanded && !isHovered,
-        'translate-x-0 w-[290px]': isMobileOpen,
+        'translate-x-0 w-[252px]': isMobileOpen,
         '-translate-x-full': !isMobileOpen,
         'lg:translate-x-0': true,
       },

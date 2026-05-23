@@ -85,7 +85,6 @@ export default {
             />
           </svg>
         </button>
-        <SearchBar />
       </div>
 
       <div
