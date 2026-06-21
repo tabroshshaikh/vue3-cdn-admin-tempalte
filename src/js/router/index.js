@@ -73,10 +73,10 @@ const router = createRouter({
                 },
                 {
                     path: 'product/:product_uuid',
-                    name: 'Edit Products',
-                    component: () => import('/src/js/views/Edit_Products.js?v=' + v),
+                    name: 'Edit Product',
+                    component: () => import('/src/js/views/Edit_Product.js?v=' + v),
                     meta: {
-                        title: 'Edit Products',
+                        title: 'Edit Product',
                     },
                 },
                 {
