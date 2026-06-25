@@ -134,6 +134,23 @@ export default {
         product.status = status; // optimistically update for visual feedback anyway
       }
     },
+    async saveSortOrder() {
+      const sortOrder = this.products.map((p, index) => ({
+        position: index + 1,
+        product_uuid: p.product_uuid,
+      }));
+
+      try {
+        const response = await webService.post('/api/platform/sort-products', {
+          sort_order: sortOrder,
+        });
+        if (response.data.code !== 200) {
+          console.error('Failed to save product sort order', response.data.message);
+        }
+      } catch (error) {
+        console.error('Error saving product sort order:', error);
+      }
+    },
     async initSortable() {
       if (this.sortableInstance) {
         this.sortableInstance.destroy();
@@ -163,16 +180,10 @@ export default {
           const { oldIndex, newIndex } = evt;
           if (oldIndex === newIndex) return;
 
-          // Reorder Vue's reactive array to match the DOM
           const movedItem = this.products.splice(oldIndex, 1)[0];
           this.products.splice(newIndex, 0, movedItem);
 
-          // Log the new sort order with product_uuids
-          const sortOrder = this.products.map((p, index) => ({
-            position: index + 1,
-            product_uuid: p.product_uuid
-          }));
-          console.log('Product sort order updated:', sortOrder);
+          this.saveSortOrder();
         }
       });
     }
