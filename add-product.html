@@ -1,1558 +1,1113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CreatorOS — Add Product</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="app.css"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={theme:{extend:{fontFamily:{sans:['DM Sans','sans-serif']}}}}</script>
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:#F4F2EE;color:#1a1a1a;height:100vh;overflow:hidden;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Card Builder — Store Preview</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.8/index.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root{
-  --accent:#5B4FE9;
-  --accent-light:#EEF0FF;
-  --accent-mid:#7B6FF0;
-  --surface:#ffffff;
-  --border:#E8E6F0;
-  --muted:#8A8799;
-  --ink:#1a1a1a;
-  --radius:12px;
-}
+        :root {
+            --primary: #6C5CE7;
+            --primary-light: #A29BFE;
+            --primary-dark: #5A4BD1;
+            --bg: #F8F9FC;
+            --card-bg: #FFFFFF;
+            --text-primary: #1A1A2E;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --border: #E5E7EB;
+            --border-focus: #6C5CE7;
+            --success: #10B981;
+            --danger: #EF4444;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 50px rgba(0,0,0,0.12);
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
 
-/* ─── Layout ─── */
-.shell{display:grid;grid-template-columns:1fr 380px;grid-template-rows:56px 1fr;height:100vh;overflow:hidden;}
-.topbar{grid-column:1/-1;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:20;}
-.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;}
-.logo-mark{width:26px;height:26px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;}
-.topbar-center{display:flex;align-items:center;gap:6px;}
-.topbar-step{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none;}
-.topbar-step.active{background:var(--accent-light);color:var(--accent);}
-.topbar-step.done{color:#059669;}
-.topbar-step-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
-.topbar-actions{display:flex;align-items:center;gap:8px;}
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
 
-/* ─── Main area ─── */
-.main-area{display:grid;grid-template-columns:260px 1fr;overflow:hidden;}
+        /* Header */
+        .header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.9);
+        }
 
-/* ─── Type sidebar ─── */
-.type-sidebar{background:#fff;border-right:1px solid var(--border);overflow-y:auto;padding:16px 12px;}
-.type-sidebar-title{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 8px 10px;}
-.type-item{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:9px;cursor:pointer;transition:all .15s;margin-bottom:2px;border:1.5px solid transparent;}
-.type-item:hover{background:#F7F6FC;border-color:var(--border);}
-.type-item.active{background:var(--accent-light);border-color:#C4BFEC;}
-.type-item-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background:#F4F2EE;transition:background .15s;}
-.type-item.active .type-item-icon{background:#DDD9FB;}
-.type-item-info{flex:1;min-width:0;}
-.type-item-name{font-size:13px;font-weight:700;color:var(--ink);}
-.type-item.active .type-item-name{color:var(--accent);}
-.type-item-desc{font-size:10.5px;color:var(--muted);margin-top:1px;}
-.type-item-badge{font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;background:#DCFCE7;color:#059669;flex-shrink:0;}
-.type-item-badge.hot{background:#FEF3C7;color:#D97706;}
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-/* ─── Form area ─── */
-.form-area{overflow-y:auto;background:#F4F2EE;display:flex;flex-direction:column;}
+        .header-logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+        }
 
-/* ─── Tabs ─── */
-.product-tabs{background:#fff;border-bottom:1px solid var(--border);display:flex;padding:0 24px;flex-shrink:0;position:sticky;top:0;z-index:10;}
-.ptab{padding:13px 16px;font-size:13.5px;font-weight:600;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:6px;}
-.ptab:hover{color:var(--ink);}
-.ptab.active{color:var(--accent);border-bottom-color:var(--accent);}
-.ptab-num{width:18px;height:18px;border-radius:50%;background:#E5E7EB;color:#6B7280;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .2s;}
-.ptab.active .ptab-num{background:var(--accent);color:#fff;}
-.ptab.done .ptab-num{background:#059669;color:#fff;}
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
 
-/* ─── Tab panels ─── */
-.tab-panel{display:none;padding:24px 28px 100px;max-width:700px;animation:fadeIn .2s ease;}
-.tab-panel.active{display:block;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+        .header-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
 
-/* ─── Cards ─── */
-.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:16px;}
-.card-header{padding:15px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.card-title{font-size:14px;font-weight:700;color:var(--ink);}
-.card-subtitle{font-size:12px;color:var(--muted);margin-top:1px;}
-.card-body{padding:20px;}
+        .header-badge {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
 
-/* ─── Form elements ─── */
-.field{margin-bottom:16px;}
-.field:last-child{margin-bottom:0;}
-.label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:5px;}
-.req{color:#EF4444;}
-.hint{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4;}
-.input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:border .15s,box-shadow .15s;background:#fff;}
-.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,79,233,.1);}
-.input:disabled{background:#F9F9F9;color:#9CA3AF;cursor:not-allowed;}
-textarea.input{resize:vertical;min-height:80px;line-height:1.5;}
-.input.input-error{border-color:#EF4444 !important;box-shadow:0 0 0 3px rgba(239,68,68,.12);}
-.field-error{font-size:11.5px;color:#DC2626;margin-top:5px;line-height:1.35;}
-.input-prefix-wrap{display:flex;align-items:stretch;}
-.input-prefix{background:#F4F2EE;border:1.5px solid var(--border);border-right:none;border-radius:9px 0 0 9px;padding:0 11px;display:flex;align-items:center;font-size:12.5px;color:var(--muted);white-space:nowrap;}
-.input-prefix+.input{border-radius:0 9px 9px 0;border-left:none;}
-.price-big{font-size:20px;font-weight:700;padding:10px 14px;}
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: calc(100vh - 69px);
+        }
 
-/* ─── Thumbnail style selector ─── */
-.card-style-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.cs-opt{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .18s;}
-.cs-opt:hover{border-color:#A78BFA;}
-.cs-opt.active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,79,233,.12);}
-.cs-preview{height:68px;display:flex;align-items:center;justify-content:center;font-size:10px;}
-.cs-label{padding:7px;text-align:center;font-size:11.5px;font-weight:600;background:#fff;border-top:1px solid var(--border);}
+        /* Form Panel */
+        .form-panel {
+            padding: 32px;
+            overflow-y: auto;
+            max-height: calc(100vh - 69px);
+            border-right: 1px solid var(--border);
+        }
 
-/* ─── Emoji/gradient picker ─── */
-.emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
-.emoji-opt{aspect-ratio:1;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid transparent;transition:all .18s;}
-.emoji-opt:hover{transform:scale(1.08);}
-.emoji-opt.active{border-color:var(--ink);transform:scale(1.12);}
+        .form-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
 
-/* ─── Upload zone ─── */
-.upload-zone{border:2px dashed #C4BFEC;border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#FDFCFF;transition:all .2s;}
-.upload-zone:hover{border-color:var(--accent);background:var(--accent-light);}
-.upload-zone-icon{font-size:26px;margin-bottom:6px;}
-.upload-zone-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:3px;}
-.upload-zone-hint{font-size:11.5px;color:var(--muted);}
+        /* Card Style Selector */
+        .style-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
 
-/* ─── File type option ─── */
-.file-type-opt{border:1.5px solid var(--border);border-radius:9px;padding:13px 14px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:border .15s;margin-bottom:8px;}
-.file-type-opt.selected{border-color:var(--accent);background:var(--accent-light);}
-.file-type-opt input[type=radio]{margin-top:2px;accent-color:var(--accent);}
-.file-type-info{flex:1;}
-.file-type-name{font-size:13px;font-weight:700;color:var(--ink);}
-.file-type-desc{font-size:11.5px;color:var(--muted);margin-top:1px;}
+        .style-option {
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+            background: var(--card-bg);
+            position: relative;
+        }
 
-/* ─── Toggle ─── */
-.tog-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;transition:border .15s;margin-bottom:6px;}
-.tog-row:hover{border-color:#C4BFEC;}
-.tog-row.on{border-color:var(--accent);background:var(--accent-light);}
-.tog-label{font-size:13px;font-weight:700;color:var(--ink);}
-.tog-desc{font-size:11.5px;color:var(--muted);margin-top:1px;}
-.tog{position:relative;width:38px;height:21px;flex-shrink:0;}
-.tog input{opacity:0;width:0;height:0;}
-.tog-sl{position:absolute;cursor:pointer;inset:0;background:#D1D5DB;border-radius:21px;transition:.25s;}
-.tog-sl::before{position:absolute;content:'';width:15px;height:15px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.15);}
-.tog input:checked+.tog-sl{background:var(--accent);}
-.tog input:checked+.tog-sl::before{transform:translateX(17px);}
+        .style-option:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
 
-/* ─── Collect info ─── */
-.ci-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;background:#fff;margin-bottom:6px;}
-.ci-drag{color:#C4C0D8;cursor:grab;font-size:13px;}
-.ci-name{flex:1;font-size:13px;font-weight:600;color:var(--ink);}
-.ci-type{font-size:10.5px;color:var(--muted);background:#F4F2EE;padding:2px 7px;border-radius:6px;}
-.ci-del{width:20px;height:20px;border-radius:50%;background:#FEE2E2;color:#DC2626;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+        .style-option.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(108,92,231,0.04), rgba(162,155,254,0.04));
+            box-shadow: 0 0 0 3px rgba(108,92,231,0.12);
+        }
 
-/* ─── Buttons ─── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:9px;font-size:13.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .18s;}
-.btn-primary{background:var(--accent);color:#fff;}
-.btn-primary:hover{background:#4A3FD0;transform:translateY(-1px);box-shadow:0 4px 16px rgba(91,79,233,.28);}
-.btn-secondary{background:#fff;color:#374151;border:1.5px solid var(--border);}
-.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
-.btn-ghost{background:transparent;color:var(--accent);font-size:12.5px;padding:6px 10px;border-radius:8px;}
-.btn-ghost:hover{background:var(--accent-light);}
-.btn-sm{padding:6px 12px;font-size:12px;}
-.btn-success{background:#DCFCE7;color:#059669;border:1.5px solid #BBF7D0;}
-.btn-success:hover{background:#BBF7D0;}
+        .style-option.active::after {
+            content: '✓';
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
 
-/* ─── Pro badge ─── */
-.pro{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(90deg,#F59E0B,#EF4444);color:#fff;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:800;margin-left:4px;}
+        .style-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 10px;
+            background: var(--bg);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            transition: all 0.25s ease;
+        }
 
-/* ─── Grid ─── */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+        .style-option.active .style-icon {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            transform: scale(1.05);
+        }
 
-/* ─── Sticky bottom bar ─── */
-.bottom-bar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;z-index:10;flex-shrink:0;}
+        .style-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
 
-/* ─── Divider ─── */
-.divider{height:1px;background:var(--border);margin:16px 0;}
+        .style-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
 
-/* ─── Right preview ─── */
-.preview-col{background:linear-gradient(150deg,#312E81 0%,#5B4FE9 40%,#7C3AED 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;}
-.preview-col::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 25% 25%,rgba(255,255,255,.07) 0%,transparent 55%);}
-.prev-label{position:absolute;top:16px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.06em;z-index:5;}
-.prev-hint{position:absolute;bottom:18px;font-size:11px;color:rgba(255,255,255,.55);z-index:5;text-align:center;}
+        /* Form Fields */
+        .form-group {
+            margin-bottom: 20px;
+        }
 
-/* ─── Product preview card ─── */
-.pcard-wrap{position:relative;z-index:2;}
-.pcard{background:#fff;border-radius:16px;width:210px;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.15);}
-.pcard-img{height:120px;display:flex;align-items:center;justify-content:center;font-size:42px;transition:all .3s;}
-.pcard-body{padding:12px 14px 4px;}
-.pcard-title{font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:3px;min-height:16px;}
-.pcard-subtitle{font-size:11px;color:#6B7280;margin-bottom:8px;min-height:13px;}
-.pcard-price-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.pcard-price{font-size:16px;font-weight:800;color:var(--accent);}
-.pcard-compare{font-size:11px;color:#9CA3AF;text-decoration:line-through;}
-.pcard-btn{display:block;text-align:center;font-size:12px;font-weight:700;padding:9px;margin:0 14px 14px;border-radius:8px;color:#fff;background:var(--accent);transition:all .2s;}
-.pcard-btn:hover{opacity:.9;}
-.pcard-free-badge{background:#DCFCE7;color:#059669;font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;}
-.pcard .pcard-img::after{display:none;}
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
 
-/* Card style: Callout */
-.pcard.style-callout .pcard-img{height:128px;font-size:44px;position:relative;}
-.pcard.style-callout .pcard-img::after{
-  content:attr(data-type-label);
-  display:block;
-  position:absolute;
-  bottom:10px;
-  left:0;
-  right:0;
-  text-align:center;
-  font-size:9px;
-  font-weight:800;
-  letter-spacing:.08em;
-  color:rgba(255,255,255,.9);
-}
+        .form-label span {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
 
-/* Card style: Button */
-.pcard.style-button{padding:14px;}
-.pcard.style-button .pcard-img{height:84px;border-radius:12px;font-size:34px;margin-bottom:10px;}
-.pcard.style-button .pcard-body{padding:0 0 8px;}
-.pcard.style-button .pcard-price-row{margin-bottom:8px;}
-.pcard.style-button .pcard-btn{margin:0;border-radius:10px;}
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-primary);
+            background: var(--card-bg);
+            transition: all 0.2s ease;
+            outline: none;
+        }
 
-/* Card style: Preview */
-.pcard.style-preview .pcard-img{height:96px;font-size:38px;border-bottom:1px solid #E5E7EB;}
-.pcard.style-preview .pcard-body{padding:10px 12px 6px;}
-.pcard.style-preview .pcard-title{font-size:12.5px;}
-.pcard.style-preview .pcard-subtitle{font-size:10.5px;}
-.pcard.style-preview .pcard-price{font-size:15px;}
-.pcard.style-preview .pcard-btn{margin:0 12px 12px;border-radius:6px;font-size:11px;padding:8px;}
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(108,92,231,0.1);
+        }
 
-/* ─── Checkout preview mode ─── */
-.checkout-prev{width:210px;background:#fff;border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.3);overflow:hidden;}
-.cp-banner{height:80px;background:linear-gradient(135deg,#5B4FE9,#A855F7);display:flex;align-items:center;justify-content:center;font-size:28px;}
-.cp-body{padding:12px;}
-.cp-title{font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:3px;}
-.cp-desc{font-size:9px;color:#6B7280;margin-bottom:8px;line-height:1.4;}
-.cp-price{font-size:14px;font-weight:800;color:var(--accent);margin-bottom:8px;}
-.cp-input{border:1.5px solid #E5E7EB;border-radius:6px;padding:5px 8px;font-size:9px;color:#9CA3AF;margin-bottom:5px;width:100%;}
-.cp-btn{background:var(--accent);color:#fff;border-radius:7px;padding:7px;font-size:10px;font-weight:700;text-align:center;}
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
 
-/* ─── Preview view toggle ─── */
-.prev-mode-bar{position:absolute;bottom:18px;display:flex;gap:5px;z-index:5;}
-.prev-mode-btn{padding:5px 12px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2);}
-.prev-mode-btn.active{background:#fff;color:var(--accent);}
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
 
-/* ─── Scrollbar ─── */
-::-webkit-scrollbar{width:4px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:#D8D5EC;border-radius:4px;}
+        .form-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 28px 0;
+        }
 
-/* ─── Unsaved ─── */
-.unsaved{width:7px;height:7px;border-radius:50%;background:#F59E0B;display:inline-block;margin-right:4px;}
-</style>
+        .emoji-input-wrapper {
+            position: relative;
+        }
+
+        .emoji-input-wrapper .form-input {
+            padding-left: 44px;
+            font-size: 18px;
+        }
+
+        .emoji-input-wrapper .emoji-preview {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+
+        /* Preview Panel */
+        .preview-panel {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #F0EDFF 0%, var(--bg) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(108,92,231,0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .preview-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preview-label::before,
+        .preview-label::after {
+            content: '';
+            width: 20px;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .preview-container {
+            width: 100%;
+            max-width: 380px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Store Mockup Frame */
+        .store-frame {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.06);
+        }
+
+        .store-frame-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .store-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .store-dot:nth-child(1) { background: #FF6B6B; }
+        .store-dot:nth-child(2) { background: #FECA57; }
+        .store-dot:nth-child(3) { background: #48DBFB; }
+
+        .store-frame-url {
+            flex: 1;
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--bg);
+            padding: 4px 12px;
+            border-radius: 6px;
+            margin-left: 8px;
+        }
+
+        .store-frame-body {
+            padding: 24px 20px;
+        }
+
+        /* ==================== */
+        /* BUTTON CARD STYLE    */
+        /* ==================== */
+        .card-button {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .card-button:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-button .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .card-button .card-price-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .card-button .card-price {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .card-button .card-compare-price {
+            font-size: 14px;
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .card-button .card-cta {
+            width: 100%;
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.2px;
+        }
+
+        .card-button .card-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(108,92,231,0.3);
+            filter: brightness(0.92);
+        }
+
+        /* ==================== */
+        /* CALLOUT CARD STYLE   */
+        /* ==================== */
+        .card-callout {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .card-callout:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-callout .callout-emoji {
+            width: 64px;
+            height: 64px;
+            min-width: 64px;
+            background: linear-gradient(135deg, rgba(108,92,231,0.08), rgba(162,155,254,0.12));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .card-callout .callout-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-callout .callout-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+            line-height: 1.3;
+        }
+
+        .card-callout .callout-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .card-callout .callout-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .card-callout .callout-prices {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-callout .callout-price {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .card-callout .callout-compare {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .card-callout .callout-cta {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .card-callout .callout-cta:hover {
+            filter: brightness(0.92);
+        }
+
+        /* ==================== */
+        /* PREVIEW CARD STYLE   */
+        /* ==================== */
+        .card-preview {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px 24px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .card-preview:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-preview .preview-emoji {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(108,92,231,0.08), rgba(162,155,254,0.15));
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin-bottom: 20px;
+        }
+
+        .card-preview .preview-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .card-preview .preview-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .card-preview .preview-prices {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .card-preview .preview-price {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .card-preview .preview-compare {
+            font-size: 15px;
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .card-preview .preview-cta {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.2px;
+        }
+
+        .card-preview .preview-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(108,92,231,0.3);
+            filter: brightness(0.92);
+        }
+
+        /* Image upload area */
+        .image-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--bg);
+        }
+
+        .image-upload-area:hover {
+            border-color: var(--primary-light);
+            background: rgba(108,92,231,0.02);
+        }
+
+        .image-upload-area.has-image {
+            padding: 8px;
+            border-style: solid;
+            border-color: var(--primary);
+        }
+
+        .image-upload-area .upload-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .image-upload-area .upload-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .image-upload-area .upload-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .image-upload-area img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .preview-container {
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .card-transition {
+            animation: fadeInUp 0.3s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main {
+                grid-template-columns: 1fr;
+            }
+            .form-panel {
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+            .preview-panel {
+                min-height: 500px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .form-panel, .preview-panel {
+                padding: 20px;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scrollbar */
+        .form-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        .form-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .form-panel::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* Hidden file input */
+        .hidden-input {
+            display: none;
+        }
+
+        /* Color picker row */
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-picker {
+            width: 36px;
+            height: 36px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 2px;
+            background: var(--card-bg);
+        }
+
+        .color-picker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: 5px;
+        }
+
+        .color-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Toggle switch */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .toggle {
+            width: 44px;
+            height: 24px;
+            background: var(--border);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle.active {
+            background: var(--primary);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .toggle.active::after {
+            left: 22px;
+        }
+
+        /* Badge */
+        .card-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            letter-spacing: 0.3px;
+            z-index: 2;
+        }
+
+        .card-badge.red { background: #FF6B6B; }
+        .card-badge.green { background: var(--success); }
+        .card-badge.blue { background: #4DABF7; }
+        .card-badge.orange { background: #FF922B; }
+
+        .badge-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .badge-input-row .form-input {
+            flex: 1;
+        }
+
+        .badge-color-select {
+            width: 36px;
+            height: 36px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 2px;
+            background: var(--card-bg);
+        }
+    </style>
 </head>
 <body>
 
-<div class="shell">
-
-  <!-- ═══════════════ TOPBAR ═══════════════ -->
-  <header class="topbar">
-    <div class="logo">
-      <div class="logo-mark">
-        <svg width="14" height="14" viewBox="0 0 20 20" fill="white"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-      </div>
-      CreatorOS
-    </div>
-    <div class="topbar-center">
-      <a href="admin-dashboard.html" class="topbar-step" style="color:#9CA3AF;text-decoration:none;">← Dashboard</a>
-      <span style="color:#D1D5DB;">/</span>
-      <a href="store-setup.html" class="topbar-step done" style="text-decoration:none;">
-        <div class="topbar-step-dot"></div>Store Setup
-      </a>
-      <span style="color:#D1D5DB;">/</span>
-      <div class="topbar-step active">
-        <div class="topbar-step-dot"></div>Add Product
-      </div>
-    </div>
-    <div class="topbar-actions">
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span id="type-badge" style="background:#F4F2EE;border:1.5px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11.5px;font-weight:700;color:var(--muted);">No type selected</span>
-      </div>
-      <button class="btn btn-secondary btn-sm" onclick="saveDraft()">Save Draft</button>
-      <button class="btn btn-primary btn-sm" id="publish-btn" onclick="publishProduct()" style="opacity:.5;pointer-events:none;">Publish Product</button>
-    </div>
-  </header>
-
-  <!-- ═══════════════ MAIN AREA ═══════════════ -->
-  <div class="main-area">
-
-    <!-- ─── TYPE SIDEBAR ─── -->
-    <aside class="type-sidebar">
-      <div class="type-sidebar-title">Product Type</div>
-
-      <div class="type-item active" id="ti-digital_download" onclick="selectType('digital_download','📁','Digital Download','Instant file delivery')">
-        <div class="type-item-icon">📁</div>
-        <div class="type-item-info">
-          <div class="type-item-name">Digital Download</div>
-          <div class="type-item-desc">eBook, template, PDF…</div>
-        </div>
-        <span class="type-item-badge">Popular</span>
-      </div>
-
-      <div class="type-item" id="ti-course" onclick="selectType('course','🎓','Online Course','Video lessons & modules')">
-        <div class="type-item-icon">🎓</div>
-        <div class="type-item-info">
-          <div class="type-item-name">Online Course</div>
-          <div class="type-item-desc">Video lessons & modules</div>
-        </div>
-        <span class="type-item-badge hot">🔥 Hot</span>
-      </div>
-
-      <div class="type-item" id="ti-coaching" onclick="selectType('coaching','📅','Coaching Call','1-on-1 booking sessions')">
-        <div class="type-item-icon">📅</div>
-        <div class="type-item-info">
-          <div class="type-item-name">Coaching Call</div>
-          <div class="type-item-desc">1-on-1 booking sessions</div>
-        </div>
-      </div>
-
-      <div class="type-item" id="ti-membership" onclick="selectType('membership','👑','Membership','Recurring subscription')">
-        <div class="type-item-icon">👑</div>
-        <div class="type-item-info">
-          <div class="type-item-name">Membership</div>
-          <div class="type-item-desc">Recurring subscription</div>
-        </div>
-      </div>
-
-      <div class="type-item" id="ti-webinar" onclick="selectType('webinar','🎥','Webinar / Event','Live or recorded event')">
-        <div class="type-item-icon">🎥</div>
-        <div class="type-item-info">
-          <div class="type-item-name">Webinar / Event</div>
-          <div class="type-item-desc">Live or recorded event</div>
-        </div>
-      </div>
-
-      <div class="type-item" id="ti-community" onclick="selectType('community','👥','Paid Community','Exclusive private group')">
-        <div class="type-item-icon">👥</div>
-        <div class="type-item-info">
-          <div class="type-item-name">Paid Community</div>
-          <div class="type-item-desc">Exclusive private group</div>
-        </div>
-      </div>
-
-      <div class="type-item" id="ti-lead_magnet" onclick="selectType('lead_magnet','📧','Lead Magnet','Free — collect emails')">
-        <div class="type-item-icon">📧</div>
-        <div class="type-item-info">
-          <div class="type-item-name">Lead Magnet</div>
-          <div class="type-item-desc">Free — collect emails</div>
-        </div>
-      </div>
-
-      <div class="type-item" id="ti-external_link" onclick="selectType('external_link','🔗','External Link','Redirect to any URL')">
-        <div class="type-item-icon">🔗</div>
-        <div class="type-item-info">
-          <div class="type-item-name">External Link</div>
-          <div class="type-item-desc">Redirect to any URL</div>
-        </div>
-      </div>
-
-      <div class="type-item" id="ti-bundle" onclick="selectType('bundle','🎁','Product Bundle','Group multiple products')">
-        <div class="type-item-icon">🎁</div>
-        <div class="type-item-info">
-          <div class="type-item-name">Bundle</div>
-          <div class="type-item-desc">Group multiple products</div>
-        </div>
-      </div>
-
-    </aside><!-- /type-sidebar -->
-
-    <!-- ─── FORM + PREVIEW ─── -->
-    <div style="display:grid;grid-template-columns:1fr 380px;overflow:hidden;">
-
-      <!-- Form column -->
-      <div class="form-area">
-
-        <!-- Tabs -->
-        <div class="product-tabs" id="ptabs">
-          <div class="ptab active" id="ptab-thumb" onclick="switchTab('thumb')">
-            <div class="ptab-num">1</div> Thumbnail
-          </div>
-          <div class="ptab" id="ptab-checkout" onclick="switchTab('checkout')">
-            <div class="ptab-num">2</div> Checkout Page
-          </div>
-          <div class="ptab" id="ptab-options" onclick="switchTab('options')">
-            <div class="ptab-num">3</div> Options
-          </div>
-        </div>
-
-        <!-- ════ TAB 1: THUMBNAIL ════ -->
-        <div id="tp-thumb" class="tab-panel active">
-
-          <!-- Card Style -->
-          <div class="card">
-            <div class="card-header">
-              <div><div class="card-title">Card Style</div><div class="card-subtitle">How the product card looks in your store</div></div>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="header-logo">S</div>
+            <div>
+                <div class="header-title">Product Card Builder</div>
+                <div class="header-subtitle">Design your store product cards</div>
             </div>
-            <div class="card-body">
-              <div class="card-style-grid">
-                <div class="cs-opt active" onclick="selectCardStyle(this,'button')" id="cs-button">
-                  <div class="cs-preview" style="background:#F9F9F9;">
-                    <div style="text-align:center;padding:6px;">
-                      <div style="font-size:16px;margin-bottom:4px;" id="cs-emoji-b">📁</div>
-                      <div style="height:5px;background:#E5E7EB;border-radius:2px;margin-bottom:3px;"></div>
-                      <div style="background:#5B4FE9;color:#fff;font-size:8px;font-weight:700;padding:3px 6px;border-radius:4px;display:inline-block;">Buy Now</div>
+        </div>
+        <div class="header-badge">LIVE PREVIEW</div>
+    </header>
+
+    <!-- Main -->
+    <div class="main">
+        <!-- Form Panel -->
+        <div class="form-panel">
+            <!-- Card Style Selector -->
+            <div class="form-section-title">Card Style</div>
+            <div class="style-selector">
+                <div class="style-option active" data-style="button" onclick="selectStyle('button')">
+                    <div class="style-icon">▭</div>
+                    <div class="style-name">Button</div>
+                    <div class="style-desc">Title, price & CTA</div>
+                </div>
+                <div class="style-option" data-style="callout" onclick="selectStyle('callout')">
+                    <div class="style-icon">☰</div>
+                    <div class="style-name">Callout</div>
+                    <div class="style-desc">Horizontal layout</div>
+                </div>
+                <div class="style-option" data-style="preview" onclick="selectStyle('preview')">
+                    <div class="style-icon">▢</div>
+                    <div class="style-name">Preview</div>
+                    <div class="style-desc">Centered vertical</div>
+                </div>
+            </div>
+
+            <div class="form-divider"></div>
+
+            <!-- Product Details -->
+            <div class="form-section-title">Product Details</div>
+
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-input" id="inputTitle" placeholder="e.g. Premium Course Bundle" value="Premium Course Bundle" oninput="updatePreview()">
+            </div>
+
+            <div class="form-group" id="subtitleGroup" style="display:none;">
+                <label class="form-label">Subtitle <span>(Callout & Preview only)</span></label>
+                <input type="text" class="form-input" id="inputSubtitle" placeholder="e.g. Learn everything from scratch" value="Learn everything from scratch" oninput="updatePreview()">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Price</label>
+                    <input type="text" class="form-input" id="inputPrice" placeholder="$49.00" value="$49" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Compare at Price <span>(optional)</span></label>
+                    <input type="text" class="form-input" id="inputComparePrice" placeholder="$99.00" value="$99" oninput="updatePreview()">
+                </div>
+            </div>
+
+            <div class="form-divider"></div>
+
+            <!-- CTA -->
+            <div class="form-section-title">Call to Action</div>
+
+            <div class="form-group">
+                <label class="form-label">Button Text</label>
+                <input type="text" class="form-input" id="inputCta" placeholder="e.g. Get Instant Access" value="Get Instant Access" oninput="updatePreview()">
+            </div>
+
+            <!-- Badge -->
+            <div class="form-group">
+                <div class="toggle-row">
+                    <span class="toggle-label">Show Badge</span>
+                    <div class="toggle active" id="badgeToggle" onclick="toggleBadge()"></div>
+                </div>
+            </div>
+
+            <div id="badgeFields">
+                <div class="form-group">
+                    <label class="form-label">Badge Text</label>
+                    <div class="badge-input-row">
+                        <input type="text" class="form-input" id="inputBadge" placeholder="e.g. BESTSELLER" value="BESTSELLER" oninput="updatePreview()">
+                        <select class="badge-color-select" id="badgeColor" onchange="updatePreview()">
+                            <option value="red">🔴</option>
+                            <option value="green">🟢</option>
+                            <option value="blue">🔵</option>
+                            <option value="orange">🟠</option>
+                        </select>
                     </div>
-                  </div>
-                  <div class="cs-label">Button</div>
                 </div>
-                <div class="cs-opt" onclick="selectCardStyle(this,'callout')">
-                  <div class="cs-preview" style="background:linear-gradient(135deg,#5B4FE9,#A855F7);">
-                    <div style="text-align:center;padding:10px;">
-                      <div style="font-size:22px;margin-bottom:4px;">📁</div>
-                      <div style="color:rgba(255,255,255,.8);font-size:8px;font-weight:700;">DIGITAL DOWNLOAD</div>
-                    </div>
-                  </div>
-                  <div class="cs-label">Callout</div>
+            </div>
+
+            <div class="form-divider"></div>
+
+            <!-- Media -->
+            <div class="form-section-title" id="mediaSectionTitle" style="display:none;">Icon / Emoji</div>
+
+            <div class="form-group" id="emojiGroup" style="display:none;">
+                <label class="form-label">Emoji / Icon</label>
+                <div class="emoji-input-wrapper">
+                    <span class="emoji-preview" id="emojiPreviewDisplay">🚀</span>
+                    <input type="text" class="form-input" id="inputEmoji" placeholder="🚀" value="🚀" maxlength="4" oninput="updatePreview()">
                 </div>
-                <div class="cs-opt" onclick="selectCardStyle(this,'preview')">
-                  <div class="cs-preview" style="background:#F3F4F6;overflow:hidden;position:relative;">
-                    <div style="width:100%;height:42px;background:linear-gradient(135deg,#5B4FE9,#A855F7);display:flex;align-items:center;justify-content:center;font-size:18px;">📁</div>
-                    <div style="padding:4px 6px;"><div style="height:4px;background:#374151;border-radius:2px;"></div></div>
-                    <div style="position:absolute;bottom:6px;left:6px;right:6px;background:#5B4FE9;border-radius:3px;height:8px;"></div>
-                  </div>
-                  <div class="cs-label">Preview</div>
+            </div>
+
+            <div class="form-divider" id="customDivider"></div>
+
+            <!-- Button Color -->
+            <div class="form-section-title">Customization</div>
+
+            <div class="form-group">
+                <label class="form-label">Button Color</label>
+                <div class="color-row">
+                    <input type="color" class="color-picker" id="inputBtnColor" value="#6C5CE7" oninput="updatePreview()">
+                    <span class="color-label" id="colorLabel">#6C5CE7</span>
                 </div>
-              </div>
             </div>
-          </div>
-
-          <!-- Thumbnail image / emoji -->
-          <div class="card">
-            <div class="card-header">
-              <div><div class="card-title">Thumbnail</div><div class="card-subtitle">400 × 400 px recommended</div></div>
-            </div>
-            <div class="card-body">
-              <div class="upload-zone mb-4" onclick="showToast('File picker would open')">
-                <div class="upload-zone-icon">🖼️</div>
-                <div class="upload-zone-title">Click to upload or drag & drop</div>
-                <div class="upload-zone-hint">JPG, PNG, GIF, WebP · Max 5 MB</div>
-              </div>
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                <div style="flex:1;height:1px;background:var(--border);"></div>
-                <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;">OR PICK AN EMOJI STYLE</span>
-                <div style="flex:1;height:1px;background:var(--border);"></div>
-              </div>
-              <div class="emoji-grid">
-                <div class="emoji-opt active" style="background:linear-gradient(135deg,#5B4FE9,#A78BFA);" onclick="setEmoji(this,'📁')">📁</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#EC4899,#F97316);" onclick="setEmoji(this,'🎓')">🎓</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#0284C7,#38BDF8);" onclick="setEmoji(this,'📅')">📅</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#059669,#34D399);" onclick="setEmoji(this,'👑')">👑</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#D97706,#FBBF24);" onclick="setEmoji(this,'🎥')">🎥</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#DB2777,#F43F5E);" onclick="setEmoji(this,'📧')">📧</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#7C3AED,#C026D3);" onclick="setEmoji(this,'📊')">📊</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#0F172A,#334155);" onclick="setEmoji(this,'🔗')">🔗</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#B45309,#D97706);" onclick="setEmoji(this,'🎁')">🎁</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#BE185D,#EC4899);" onclick="setEmoji(this,'✨')">✨</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#047857,#059669);" onclick="setEmoji(this,'💡')">💡</div>
-                <div class="emoji-opt" style="background:linear-gradient(135deg,#1D4ED8,#3B82F6);" onclick="setEmoji(this,'🚀')">🚀</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Text content -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Card Text</div></div>
-            <div class="card-body">
-              <div class="field">
-                <label class="label">Product Title <span class="req">*</span></label>
-                <input type="text" class="input" id="inp-title" placeholder="e.g. The Ultimate Creator Course" oninput="updatePrev()"/>
-                <p class="hint">Keep it short and punchy — max 80 chars</p>
-              </div>
-              <div class="field">
-                <label class="label">Subtitle / Tagline</label>
-                <input type="text" class="input" id="inp-subtitle" placeholder="e.g. 40 lessons · For beginners" oninput="updatePrev()"/>
-              </div>
-              <div class="field" style="margin-bottom:0;">
-                <label class="label">Button Text</label>
-                <input type="text" class="input" id="inp-btn-text" value="Get Instant Access" oninput="updateBtnText()"/>
-              </div>
-            </div>
-          </div>
-
-        </div><!-- /tp-thumb -->
-
-
-        <!-- ════ TAB 2: CHECKOUT PAGE ════ -->
-        <div id="tp-checkout" class="tab-panel">
-
-          <!-- Banner -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Checkout Banner</div><div class="card-subtitle">1920 × 1080 px recommended</div></div>
-            <div class="card-body">
-              <div class="upload-zone" onclick="showToast('Banner upload would open')">
-                <div class="upload-zone-icon">🖼️</div>
-                <div class="upload-zone-title">Upload checkout page banner</div>
-                <div class="upload-zone-hint">Shown at the top of your checkout page · Max 10 MB</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Description -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Description</div></div>
-            <div class="card-body">
-              <div class="field">
-                <label class="label">Headline</label>
-                <input type="text" class="input" id="inp-headline" placeholder="What will your buyers get?" oninput="updateCPrev()"/>
-              </div>
-              <div class="field">
-                <label class="label">Description Body</label>
-                <textarea class="input" id="inp-desc" rows="5" placeholder="Describe what's included, who it's for, and why they need it now…" oninput="updateCPrev()"></textarea>
-              </div>
-              <div class="field">
-                <label class="label">Bottom Section Title</label>
-                <input type="text" class="input" placeholder="e.g. What's Inside This Course?" value=""/>
-              </div>
-              <div class="field" style="margin-bottom:0;">
-                <label class="label">Call-to-Action Button Text</label>
-                <input type="text" class="input" placeholder="e.g. Enroll Now — $299" value=""/>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pricing -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Pricing</div></div>
-            <div class="card-body">
-              <div class="tog-row on" id="free-row" onclick="toggleFree()">
-                <div><div class="tog-label">Free Product</div><div class="tog-desc">No payment required — just email capture</div></div>
-                <label class="tog" onclick="event.stopPropagation()"><input type="checkbox" id="free-chk" onchange="toggleFreeFromInput(event)"/><span class="tog-sl"></span></label>
-              </div>
-
-              <div id="price-block" class="mt-3">
-                <div class="grid-2 mb-3">
-                  <div class="field" style="margin-bottom:0;">
-                    <label class="label">Price</label>
-                    <div class="input-prefix-wrap">
-                      <div class="input-prefix" style="font-size:16px;font-weight:700;">$</div>
-                      <input type="number" class="input price-big" id="inp-price" placeholder="0.00" step="0.01" min="0" oninput="updatePrev()"/>
-                    </div>
-                  </div>
-                  <div class="field" style="margin-bottom:0;">
-                    <label class="label">Compare-at Price</label>
-                    <div class="input-prefix-wrap">
-                      <div class="input-prefix" style="font-size:16px;font-weight:700;color:#9CA3AF;">$</div>
-                      <input type="number" class="input price-big" id="inp-compare" placeholder="Original" step="0.01" min="0" oninput="updatePrev()"/>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Pro pricing options -->
-                <div class="tog-row">
-                  <div><div class="tog-label">Discount Codes <span class="pro">PRO</span></div><div class="tog-desc">Let buyers apply coupons at checkout</div></div>
-                  <label class="tog"><input type="checkbox" disabled/><span class="tog-sl"></span></label>
-                </div>
-                <div class="tog-row">
-                  <div><div class="tog-label">Limit Quantity <span class="pro">PRO</span></div><div class="tog-desc">Create scarcity with stock limits</div></div>
-                  <label class="tog"><input type="checkbox" disabled/><span class="tog-sl"></span></label>
-                </div>
-                <div class="tog-row">
-                  <div><div class="tog-label">Pay What You Want</div><div class="tog-desc">Buyers choose their own price</div></div>
-                  <label class="tog"><input type="checkbox"/><span class="tog-sl"></span></label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Digital Product File (hidden for coaching/webinar/etc) -->
-          <div class="card" id="file-card">
-            <div class="card-header">
-              <div><div class="card-title">Product File</div><div class="card-subtitle">Delivered instantly after purchase</div></div>
-            </div>
-            <div class="card-body">
-              <div class="file-type-opt selected" id="fto-upload" onclick="selectFileType('upload')">
-                <input type="radio" name="ftype" checked/>
-                <div class="file-type-info">
-                  <div class="file-type-name">Upload a File</div>
-                  <div class="file-type-desc">Direct upload — customers download immediately</div>
-                </div>
-              </div>
-              <div id="upload-zone-area">
-                <div class="upload-zone" onclick="showToast('File upload dialog would open')">
-                  <div class="upload-zone-icon">📎</div>
-                  <div class="upload-zone-title">Drag & drop your file here</div>
-                  <div class="upload-zone-hint">PDF, MP4, ZIP, PNG, PSD, XLS, SVG · Up to 5 GB</div>
-                  <div class="upload-zone-hint" style="margin-top:3px;font-weight:600;color:var(--accent);">Recommended max: 500 MB for fast downloads</div>
-                </div>
-              </div>
-
-              <div class="file-type-opt" id="fto-url" onclick="selectFileType('url')" style="margin-top:8px;">
-                <input type="radio" name="ftype"/>
-                <div class="file-type-info">
-                  <div class="file-type-name">Redirect to URL</div>
-                  <div class="file-type-desc">Link to Google Drive, Dropbox, Notion, etc.</div>
-                </div>
-              </div>
-              <div id="url-zone-area" style="display:none;margin-top:8px;">
-                <div class="field">
-                  <label class="label">Destination URL <span class="req">*</span></label>
-                  <input type="url" class="input" id="inp-file-url" placeholder="https://drive.google.com/file/d/…"/>
-                  <p class="hint">Make sure link permissions are set to "Anyone with link"</p>
-                </div>
-                <div class="field" style="margin-bottom:0;">
-                  <label class="label">File / Product Name</label>
-                  <input type="text" class="input" id="inp-file-label" placeholder="e.g. Ultimate Creator Playbook.pdf"/>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Collect Info -->
-          <div class="card">
-            <div class="card-header">
-              <div><div class="card-title">Collect Info from Buyers</div><div class="card-subtitle">Ask extra questions at checkout</div></div>
-            </div>
-            <div class="card-body">
-              <div id="ci-list">
-                <div class="ci-row" style="opacity:.5;">
-                  <div class="ci-drag">⠿</div>
-                  <div class="ci-name">Email Address</div>
-                  <div class="ci-type">email</div>
-                  <span style="font-size:10px;color:#9CA3AF;">Always</span>
-                </div>
-              </div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
-                <button class="btn btn-secondary btn-sm" onclick="addCI('First Name','text')">+ First Name</button>
-                <button class="btn btn-secondary btn-sm" onclick="addCI('Phone Number','phone')">+ Phone</button>
-                <button class="btn btn-secondary btn-sm" onclick="addCI('Company','text')">+ Company</button>
-                <button class="btn btn-secondary btn-sm" onclick="addCI('How did you find us?','dropdown')">+ Source</button>
-                <button class="btn btn-secondary btn-sm" onclick="addCI('Custom Question','text')">+ Custom</button>
-              </div>
-            </div>
-          </div>
-
-        </div><!-- /tp-checkout -->
-
-
-        <!-- ════ TAB 3: OPTIONS ════ -->
-        <div id="tp-options" class="tab-panel">
-
-          <!-- Reviews & Social proof -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Social Proof</div></div>
-            <div class="card-body">
-              <div class="tog-row on">
-                <div><div class="tog-label">Enable Reviews</div><div class="tog-desc">Let buyers leave star ratings & written reviews</div></div>
-                <label class="tog"><input type="checkbox" checked/><span class="tog-sl"></span></label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Marketing -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Marketing & Automation</div></div>
-            <div class="card-body">
-              <div class="tog-row">
-                <div><div class="tog-label">Email Flows</div><div class="tog-desc">Send automated emails after purchase or sign-up</div></div>
-                <label class="tog"><input type="checkbox" id="feature-chk"/><span class="tog-sl"></span></label>
-              </div>
-              <div class="tog-row">
-                <div><div class="tog-label">Order Bumps <span class="pro">PRO</span></div><div class="tog-desc">Suggest an add-on product at checkout</div></div>
-                <label class="tog"><input type="checkbox" disabled/><span class="tog-sl"></span></label>
-              </div>
-              <div class="tog-row">
-                <div><div class="tog-label">Affiliate Share <span class="pro">PRO</span></div><div class="tog-desc">Let fans earn a % by promoting this product</div></div>
-                <label class="tog"><input type="checkbox" disabled/><span class="tog-sl"></span></label>
-              </div>
-              <div class="tog-row">
-                <div><div class="tog-label">Upsell After Purchase</div><div class="tog-desc">Redirect to another product after checkout</div></div>
-                <label class="tog"><input type="checkbox"/><span class="tog-sl"></span></label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Confirmation email -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Confirmation Email</div><div class="card-subtitle">Sent to buyer immediately after purchase</div></div>
-            <div class="card-body">
-              <div class="field">
-                <label class="label">Subject Line</label>
-                <input type="text" class="input" value="🎉 You're in! Here's your access"/>
-              </div>
-              <div class="field" style="margin-bottom:0;">
-                <label class="label">Email Body</label>
-                <textarea class="input" rows="4">Hey {{first_name}},
-
-Thank you so much for your purchase! Here's how to access your product:
-
-{{product_access_link}}
-
-Let me know if you have any questions 🙌</textarea>
-              </div>
-            </div>
-          </div>
-
-          <!-- SEO -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">SEO</div></div>
-            <div class="card-body">
-              <div class="field">
-                <label class="label">Product Slug</label>
-                <div class="input-prefix-wrap">
-                  <div class="input-prefix">creatoros.io/alexjohnson/</div>
-                  <input type="text" class="input" id="inp-slug" placeholder="product-slug" oninput="updateSlug()"/>
-                </div>
-              </div>
-              <div class="field">
-                <label class="label">Meta Title</label>
-                <input type="text" class="input" placeholder="SEO title (max 60 chars)"/>
-              </div>
-              <div class="field" style="margin-bottom:0;">
-                <label class="label">Meta Description</label>
-                <textarea class="input" rows="2" placeholder="SEO description (max 160 chars)"></textarea>
-              </div>
-            </div>
-          </div>
-
-          <!-- Publish settings -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Publish Settings</div></div>
-            <div class="card-body">
-              <div class="tog-row">
-                <div><div class="tog-label">Featured Product</div><div class="tog-desc">Pin to the top of your store page</div></div>
-                <label class="tog"><input type="checkbox"/><span class="tog-sl"></span></label>
-              </div>
-              <div class="tog-row">
-                <div><div class="tog-label">Publish Immediately</div><div class="tog-desc">Make live as soon as you hit Publish</div></div>
-                <label class="tog"><input type="checkbox" id="publish-now-chk" checked/><span class="tog-sl"></span></label>
-              </div>
-              <div class="field mt-3" style="margin-bottom:0;">
-                <label class="label">Scheduled Publish Date</label>
-                <input type="datetime-local" class="input"/>
-                <p class="hint">Leave blank to publish immediately</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Type-specific fields -->
-          <div id="type-specific-card" class="card" style="display:none;">
-            <div class="card-header"><div class="card-title" id="ts-title">Type Settings</div></div>
-            <div class="card-body" id="ts-body"></div>
-          </div>
-
-        </div><!-- /tp-options -->
-
-        <div class="bottom-bar">
-          <div style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;">
-            <span class="unsaved"></span>Draft — not published
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-secondary" onclick="saveDraft()">Save Draft</button>
-            <button class="btn" style="background:#EEF0FF;color:var(--accent);border:1.5px solid var(--accent-light);" onclick="switchTab('checkout')">Next: Checkout →</button>
-          </div>
         </div>
 
-      </div><!-- /form column -->
-
-      <!-- ─── PREVIEW COLUMN ─── -->
-      <div class="preview-col">
-        <div class="prev-label">PRODUCT PREVIEW</div>
-
-        <!-- Card Preview (shown on Tab 1 & 2) -->
-        <div class="pcard-wrap" id="prev-card-wrap">
-          <div class="pcard style-button" id="prev-card">
-            <div class="pcard-img" id="prev-img" data-type-label="DIGITAL DOWNLOAD">📁</div>
-            <div class="pcard-body">
-              <div class="pcard-title" id="prev-title">Add a title above →</div>
-              <div class="pcard-subtitle" id="prev-subtitle">Your subtitle goes here</div>
-              <div class="pcard-price-row">
-                <div class="pcard-price" id="prev-price">$0.00</div>
-                <div class="pcard-compare" id="prev-compare" style="display:none;"></div>
-              </div>
+        <!-- Preview Panel -->
+        <div class="preview-panel">
+            <div class="preview-label">STORE PREVIEW</div>
+            <div class="preview-container" id="previewContainer">
+                <!-- Cards rendered here by JS -->
             </div>
-            <div class="pcard-btn" id="prev-btn">Get Instant Access</div>
-          </div>
-
-          <!-- Badge overlay for type -->
-          <div style="margin-top:10px;text-align:center;">
-            <span id="prev-type-badge" style="background:rgba(255,255,255,.2);backdrop-filter:blur(6px);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.25);">📁 Digital Download</span>
-          </div>
         </div>
-
-        <!-- Checkout Preview (shown on Tab 2 hover) -->
-        <div class="pcard-wrap" id="prev-checkout-wrap" style="display:none;">
-          <div class="checkout-prev">
-            <div class="cp-banner" id="cp-banner-bg">📁</div>
-            <div class="cp-body">
-              <div class="cp-title" id="cp-title">Add your headline →</div>
-              <div class="cp-desc" id="cp-desc">Your description will appear here to help convince buyers.</div>
-              <div class="cp-price" id="cp-price-lbl">$0.00</div>
-              <input class="cp-input" placeholder="Email address" readonly/>
-              <input class="cp-input" placeholder="First name" readonly/>
-              <div class="cp-btn" id="cp-btn">Get Instant Access</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="prev-mode-bar">
-          <div class="prev-mode-btn active" onclick="switchPreviewMode(this,'card')">Card</div>
-          <div class="prev-mode-btn" onclick="switchPreviewMode(this,'checkout')">Checkout</div>
-        </div>
-
-        <div class="prev-hint">Updates as you type</div>
-      </div>
-
-    </div><!-- /form+preview grid -->
-
-  </div><!-- /main-area -->
-</div><!-- /shell -->
-
-
-<!-- SUCCESS MODAL -->
-<div id="success-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
-  <div style="background:#fff;border-radius:20px;padding:36px;max-width:360px;width:90%;text-align:center;animation:fadeIn .3s ease;">
-    <div style="font-size:52px;margin-bottom:10px;">🎉</div>
-    <h2 style="font-family:'Instrument Serif',serif;font-size:22px;color:#1a1a1a;margin-bottom:6px;">Product Published!</h2>
-    <p style="color:#6B7280;font-size:13.5px;margin-bottom:20px;" id="modal-subtitle">Your product is live on your store.</p>
-    <div style="background:#F4F2EE;border-radius:10px;padding:10px 14px;margin-bottom:18px;border:1.5px solid var(--border);">
-      <code style="font-size:13px;font-weight:700;color:var(--accent);" id="modal-url">creatoros.io/alexjohnson/product-slug</code>
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="copyProductUrl()">📋 Copy Product Link</button>
-      <button class="btn btn-secondary" style="width:100%;justify-content:center;" onclick="addAnotherProduct()">+ Add Another Product</button>
-      <button class="btn" style="width:100%;justify-content:center;background:transparent;color:var(--muted);" onclick="closeModal()">Go to Dashboard</button>
-    </div>
-  </div>
-</div>
 
-
-<script>
-let currentType = 'digital_download';
-let currentTab = 'thumb';
-let previewMode = 'card';
-let selectedFileType = 'upload';
-let selectedCardStyle = 'button';
-let selectedEmoji = '📁';
-let selectedEmojiBackground = 'linear-gradient(135deg,#5B4FE9,#A78BFA)';
-let isSubmitting = false;
-
-const SUPPORTED_TYPE_MAP = {
-  digital_download: 'digital_download',
-  lead_magnet: 'lead_magnet',
-  external_link: 'external_link',
-  coaching: 'custom_service',
-};
-
-const TYPE_META = {
-  digital_download: { emoji: '📁', name: 'Digital Download' },
-  course: { emoji: '🎓', name: 'Online Course' },
-  coaching: { emoji: '📅', name: 'Coaching Call' },
-  membership: { emoji: '👑', name: 'Membership' },
-  webinar: { emoji: '🎥', name: 'Webinar / Event' },
-  community: { emoji: '👥', name: 'Paid Community' },
-  lead_magnet: { emoji: '📧', name: 'Lead Magnet' },
-  external_link: { emoji: '🔗', name: 'External Link' },
-  bundle: { emoji: '🎁', name: 'Product Bundle' },
-};
-
-const apiClient = window.axios ? axios.create() : null;
-if (apiClient) {
-  apiClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
-}
-
-function normalizeSlug(value) {
-  return String(value || '')
-    .toLowerCase()
-    .trim()
-    .replace(/['"]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-}
-
-function isValidUrl(value) {
-  try {
-    new URL(value);
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-function clearFieldErrors() {
-  document.querySelectorAll('.field-error').forEach((el) => el.remove());
-  document.querySelectorAll('.input-error').forEach((el) => el.classList.remove('input-error'));
-}
-
-function markFieldError(inputId, message) {
-  const input = document.getElementById(inputId);
-  if (!input) {
-    return;
-  }
-
-  input.classList.add('input-error');
-  const field = input.closest('.field') || input.parentElement;
-  if (!field) {
-    return;
-  }
-
-  const existing = field.querySelector(`.field-error[data-for="${inputId}"]`);
-  if (existing) {
-    existing.textContent = message;
-    return;
-  }
-
-  const errorNode = document.createElement('p');
-  errorNode.className = 'field-error';
-  errorNode.dataset.for = inputId;
-  errorNode.textContent = message;
-  field.appendChild(errorNode);
-}
-
-function applyApiErrors(errors) {
-  if (!errors) {
-    return;
-  }
-
-  const fieldMap = {
-    title: 'inp-title',
-    slug: 'inp-slug',
-    short_description: 'inp-subtitle',
-    description: 'inp-desc',
-    cta_text: 'inp-btn-text',
-    price: 'inp-price',
-    compare_at_price: 'inp-compare',
-    destination_url: 'inp-external-url',
-    file_url: 'inp-file-url',
-  };
-
-  Object.keys(errors).forEach((apiField) => {
-    const inputId = fieldMap[apiField];
-    if (!inputId) {
-      return;
-    }
-    const messages = errors[apiField];
-    markFieldError(inputId, Array.isArray(messages) && messages.length ? messages[0] : 'Invalid value.');
-  });
-}
-
-function setPublishButtonState(loading) {
-  const publishBtn = document.getElementById('publish-btn');
-  if (!publishBtn) {
-    return;
-  }
-  publishBtn.disabled = loading;
-  publishBtn.style.pointerEvents = loading ? 'none' : 'auto';
-  publishBtn.style.opacity = loading ? '.7' : '1';
-  publishBtn.textContent = loading ? 'Publishing...' : 'Publish Product';
-}
-
-function selectType(type, emoji, name, desc) {
-  currentType = type;
-  document.querySelectorAll('.type-item').forEach((t) => t.classList.remove('active'));
-  const selectedNode = document.getElementById(`ti-${type}`);
-  if (selectedNode) {
-    selectedNode.classList.add('active');
-  }
-
-  const badge = document.getElementById('type-badge');
-  badge.textContent = `${emoji} ${name}`;
-  badge.style.background = 'var(--accent-light)';
-  badge.style.color = 'var(--accent)';
-  badge.style.borderColor = '#C4BFEC';
-
-  document.getElementById('prev-type-badge').textContent = `${emoji} ${name}`;
-  document.getElementById('prev-img').textContent = emoji;
-  document.getElementById('prev-img').dataset.typeLabel = String(name || '').toUpperCase();
-  document.getElementById('cp-banner-bg').textContent = emoji;
-  document.getElementById('cp-banner-bg').style.fontSize = '36px';
-  selectedEmoji = emoji;
-
-  const pb = document.getElementById('publish-btn');
-  pb.style.opacity = '1';
-  pb.style.pointerEvents = 'auto';
-
-  const noFile = ['coaching', 'webinar', 'community', 'external_link', 'lead_magnet'];
-  document.getElementById('file-card').style.display = noFile.includes(type) ? 'none' : 'block';
-
-  showTypeSpecific(type);
-  clearFieldErrors();
-  updatePrev();
-}
-
-function switchTab(name) {
-  currentTab = name;
-  document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
-  document.getElementById(`tp-${name}`).classList.add('active');
-  document.querySelectorAll('.ptab').forEach((t) => t.classList.remove('active'));
-  document.getElementById(`ptab-${name}`).classList.add('active');
-
-  if (name === 'checkout') {
-    switchPreviewMode(document.querySelectorAll('.prev-mode-btn')[1], 'checkout');
-  } else {
-    switchPreviewMode(document.querySelectorAll('.prev-mode-btn')[0], 'card');
-  }
-
-  const nextBtn = document.querySelector('.bottom-bar div:last-child').children[1];
-  nextBtn.style.background = '#EEF0FF';
-  nextBtn.style.color = 'var(--accent)';
-  nextBtn.style.borderColor = 'var(--accent-light)';
-
-  if (name === 'thumb') {
-    nextBtn.textContent = 'Next: Checkout →';
-    nextBtn.onclick = () => switchTab('checkout');
-  } else if (name === 'checkout') {
-    nextBtn.textContent = 'Next: Options →';
-    nextBtn.onclick = () => switchTab('options');
-  } else {
-    nextBtn.textContent = '✓ Ready to Publish';
-    nextBtn.style.background = '#DCFCE7';
-    nextBtn.style.color = '#059669';
-    nextBtn.style.borderColor = '#BBF7D0';
-    nextBtn.onclick = publishProduct;
-  }
-}
-
-function switchPreviewMode(el, mode) {
-  document.querySelectorAll('.prev-mode-btn').forEach((b) => b.classList.remove('active'));
-  el.classList.add('active');
-  previewMode = mode;
-  document.getElementById('prev-card-wrap').style.display = mode === 'card' ? 'block' : 'none';
-  document.getElementById('prev-checkout-wrap').style.display = mode === 'checkout' ? 'block' : 'none';
-}
-
-function applyCardStyle(style) {
-  const card = document.getElementById('prev-card');
-  if (!card) {
-    return;
-  }
-  const normalizedStyle = ['button', 'callout', 'preview'].includes(style) ? style : 'button';
-  card.classList.remove('style-button', 'style-callout', 'style-preview');
-  card.classList.add(`style-${normalizedStyle}`);
-}
-
-function selectCardStyle(el, style) {
-  document.querySelectorAll('.cs-opt').forEach((o) => o.classList.remove('active'));
-  el.classList.add('active');
-  selectedCardStyle = style;
-  applyCardStyle(style);
-}
-
-function setEmoji(el, emoji) {
-  document.querySelectorAll('.emoji-opt').forEach((e) => e.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('prev-img').textContent = emoji;
-  document.getElementById('cp-banner-bg').textContent = emoji;
-  document.getElementById('prev-img').style.background = el.style.background;
-  document.getElementById('cp-banner-bg').style.background = el.style.background;
-  selectedEmoji = emoji;
-  selectedEmojiBackground = el.style.background || selectedEmojiBackground;
-}
-
-function updatePrev() {
-  const title = document.getElementById('inp-title').value;
-  const subtitle = document.getElementById('inp-subtitle').value;
-  const price = document.getElementById('inp-price')?.value;
-  const compare = document.getElementById('inp-compare')?.value;
-
-  document.getElementById('prev-title').textContent = title || 'Add a title above →';
-  document.getElementById('prev-subtitle').textContent = subtitle || 'Your subtitle goes here';
-
-  if (document.getElementById('free-chk').checked) {
-    document.getElementById('prev-price').textContent = 'FREE';
-    document.getElementById('cp-price-lbl').textContent = 'FREE';
-  } else if (price) {
-    const parsedPrice = Number.parseFloat(price);
-    document.getElementById('prev-price').textContent = Number.isFinite(parsedPrice) ? `$${parsedPrice.toFixed(2)}` : '$0.00';
-    document.getElementById('cp-price-lbl').textContent = document.getElementById('prev-price').textContent;
-  } else {
-    document.getElementById('prev-price').textContent = '$0.00';
-    document.getElementById('cp-price-lbl').textContent = '$0.00';
-  }
-
-  if (compare) {
-    const parsedCompare = Number.parseFloat(compare);
-    if (Number.isFinite(parsedCompare)) {
-      document.getElementById('prev-compare').style.display = 'block';
-      document.getElementById('prev-compare').textContent = `$${parsedCompare.toFixed(2)}`;
-    }
-  } else {
-    document.getElementById('prev-compare').style.display = 'none';
-  }
-
-  const slug = normalizeSlug(title);
-  const slugInput = document.getElementById('inp-slug');
-  if (slug && slugInput && !slugInput.dataset.editedManually) {
-    slugInput.value = slug;
-  }
-  if (slugInput && slugInput.value.trim()) {
-    document.getElementById('modal-url').textContent = `creatoros.io/alexjohnson/${slugInput.value.trim()}`;
-  }
-}
-
-function updateBtnText() {
-  const text = document.getElementById('inp-btn-text').value || 'Get Instant Access';
-  document.getElementById('prev-btn').textContent = text;
-  document.getElementById('cp-btn').textContent = text;
-}
-
-function updateCPrev() {
-  const headline = document.getElementById('inp-headline').value;
-  const description = document.getElementById('inp-desc').value;
-  document.getElementById('cp-title').textContent = headline || 'Add your headline →';
-  document.getElementById('cp-desc').textContent = (description || 'Your description will appear here.').substring(0, 100);
-}
-
-function updateSlug() {
-  const input = document.getElementById('inp-slug');
-  if (!input) {
-    return;
-  }
-  input.dataset.editedManually = 'true';
-  input.value = normalizeSlug(input.value);
-  const value = input.value.trim();
-  if (value) {
-    document.getElementById('modal-url').textContent = `creatoros.io/alexjohnson/${value}`;
-  }
-}
-
-function toggleFree(forcedState) {
-  const chk = document.getElementById('free-chk');
-  const block = document.getElementById('price-block');
-  const isChecked = typeof forcedState === 'boolean' ? forcedState : !chk.checked;
-  chk.checked = isChecked;
-
-  document.getElementById('free-row').classList.toggle('on', isChecked);
-  if (isChecked) {
-    document.getElementById('prev-price').textContent = 'FREE';
-    document.getElementById('prev-price').style.color = '#059669';
-    document.getElementById('cp-price-lbl').textContent = 'FREE';
-    document.getElementById('cp-price-lbl').style.color = '#059669';
-    block.style.opacity = '.4';
-    block.querySelectorAll('input').forEach((input) => {
-      input.disabled = true;
-    });
-  } else {
-    document.getElementById('prev-price').style.color = 'var(--accent)';
-    document.getElementById('cp-price-lbl').style.color = 'var(--accent)';
-    block.style.opacity = '1';
-    block.querySelectorAll('input').forEach((input) => {
-      input.disabled = false;
-    });
-    updatePrev();
-  }
-}
-
-function toggleFreeFromInput(event) {
-  event.stopPropagation();
-  toggleFree(event.target.checked);
-}
-
-function selectFileType(type) {
-  selectedFileType = type;
-  document.getElementById('fto-upload').classList.toggle('selected', type === 'upload');
-  document.getElementById('fto-url').classList.toggle('selected', type === 'url');
-  document.getElementById('upload-zone-area').style.display = type === 'upload' ? 'block' : 'none';
-  document.getElementById('url-zone-area').style.display = type === 'url' ? 'block' : 'none';
-}
-
-function addCI(name, type) {
-  const list = document.getElementById('ci-list');
-  const row = document.createElement('div');
-  row.className = 'ci-row';
-  row.innerHTML = `<div class="ci-drag">⠿</div><div class="ci-name">${name}</div><div class="ci-type">${type}</div><div class="ci-del" onclick="this.parentElement.remove()">✕</div>`;
-  list.appendChild(row);
-}
-
-function showTypeSpecific(type) {
-  const card = document.getElementById('type-specific-card');
-  const title = document.getElementById('ts-title');
-  const body = document.getElementById('ts-body');
-
-  const configs = {
-    coaching: {
-      title: '📅 Coaching Settings',
-      html: `
-        <div class="grid-2 mb-3">
-          <div class="field"><label class="label">Session Duration (mins)</label><input type="number" class="input" value="60"/></div>
-          <div class="field"><label class="label">Platform</label><select class="input"><option>Zoom</option><option>Google Meet</option><option>Microsoft Teams</option><option>Phone</option><option>Custom</option></select></div>
-          <div class="field"><label class="label">Buffer Before (mins)</label><input type="number" class="input" value="0"/></div>
-          <div class="field"><label class="label">Buffer After (mins)</label><input type="number" class="input" value="15"/></div>
-          <div class="field"><label class="label">Max Bookings/Day</label><input type="number" class="input" placeholder="Unlimited"/></div>
-          <div class="field"><label class="label">Advance Booking Days</label><input type="number" class="input" value="30"/></div>
-        </div>
-        <div class="field"><label class="label">Custom Meeting URL</label><input type="url" class="input" placeholder="https://zoom.us/my/yourroom"/></div>
-      `,
-    },
-    membership: {
-      title: '👑 Membership Settings',
-      html: `
-        <div class="grid-2 mb-3">
-          <div class="field"><label class="label">Billing Interval</label><select class="input"><option>Monthly</option><option>Weekly</option><option>Quarterly</option><option>Yearly</option></select></div>
-          <div class="field"><label class="label">Trial Days</label><input type="number" class="input" value="0"/></div>
-          <div class="field"><label class="label">Max Members</label><input type="number" class="input" placeholder="Unlimited"/></div>
-          <div class="field"><label class="label">Stripe Price ID</label><input type="text" class="input" placeholder="price_…"/></div>
-        </div>
-        <div class="field"><label class="label">Member Access URL</label><input type="url" class="input" placeholder="https://community.example.com"/></div>
-      `,
-    },
-    webinar: {
-      title: '🎥 Webinar Settings',
-      html: `
-        <div class="grid-2 mb-3">
-          <div class="field"><label class="label">Event Type</label><select class="input"><option>Live</option><option>Recorded</option><option>Hybrid</option></select></div>
-          <div class="field"><label class="label">Platform</label><select class="input"><option>Zoom</option><option>YouTube Live</option><option>Teams</option><option>Custom</option></select></div>
-          <div class="field"><label class="label">Starts At</label><input type="datetime-local" class="input"/></div>
-          <div class="field"><label class="label">Ends At</label><input type="datetime-local" class="input"/></div>
-          <div class="field"><label class="label">Timezone</label><input type="text" class="input" value="UTC"/></div>
-          <div class="field"><label class="label">Max Attendees</label><input type="number" class="input" placeholder="Unlimited"/></div>
-        </div>
-        <div class="field"><label class="label">Join URL</label><input type="url" class="input" placeholder="https://…"/></div>
-      `,
-    },
-    lead_magnet: {
-      title: '📧 Lead Magnet Settings',
-      html: `
-        <div class="field"><label class="label">CTA Button Label</label><input type="text" class="input" value="Get Free Access"/></div>
-        <div class="field"><label class="label">Success Message</label><textarea class="input" rows="3" placeholder="Shown after email is submitted…"></textarea></div>
-        <div class="field"><label class="label">Redirect URL</label><input type="url" class="input" placeholder="https://… (optional post-signup redirect)"/></div>
-      `,
-    },
-    external_link: {
-      title: '🔗 External Link Settings',
-      html: `
-        <div class="field"><label class="label">Destination URL <span class="req">*</span></label><input id="inp-external-url" type="url" class="input" placeholder="https://youtube.com/watch?v=…"/></div>
-        <div class="field"><label class="label">Link Label</label><input id="inp-external-label" type="text" class="input" placeholder="e.g. Watch the Free Masterclass"/></div>
-        <div class="tog-row on"><div><div class="tog-label">Show Link After Purchase</div><div class="tog-desc">Display URL on the order confirmation page</div></div><label class="tog"><input type="checkbox" checked/><span class="tog-sl"></span></label></div>
-      `,
-    },
-    bundle: {
-      title: '🎁 Bundle Settings',
-      html: `
-        <div class="field"><label class="label">Bundle Products</label><p class="hint" style="margin-top:2px;">Select products to include in this bundle:</p></div>
-        <div style="border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
-          <div style="padding:10px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
-            <input type="checkbox" class="accent-violet-600" checked/>
-            <span style="font-size:13px;font-weight:600;">🎓 The Ultimate Creator Course</span>
-            <span style="font-size:11px;color:var(--muted);margin-left:auto;">$299</span>
-          </div>
-          <div style="padding:10px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
-            <input type="checkbox" class="accent-violet-600" checked/>
-            <span style="font-size:13px;font-weight:600;">📁 Content Calendar Template</span>
-            <span style="font-size:11px;color:var(--muted);margin-left:auto;">$29</span>
-          </div>
-        </div>
-      `,
-    },
-  };
-
-  const cfg = configs[type];
-  if (cfg) {
-    card.style.display = 'block';
-    title.textContent = cfg.title;
-    body.innerHTML = cfg.html;
-  } else {
-    card.style.display = 'none';
-  }
-}
-
-function validateForm() {
-  clearFieldErrors();
-  const isSupportedType = Boolean(SUPPORTED_TYPE_MAP[currentType]);
-  if (!isSupportedType) {
-    showToast('This product type is not yet supported by API. Please choose Digital Download, Lead Magnet, External Link, or Coaching.');
-    return false;
-  }
-
-  const title = document.getElementById('inp-title').value.trim();
-  const subtitle = document.getElementById('inp-subtitle').value.trim();
-  const ctaText = document.getElementById('inp-btn-text').value.trim();
-  const description = document.getElementById('inp-desc').value.trim();
-  const slugInput = document.getElementById('inp-slug');
-  if (!slugInput.value.trim() && title) {
-    slugInput.value = normalizeSlug(title);
-  }
-  const slug = slugInput.value.trim();
-  const isFree = document.getElementById('free-chk').checked;
-  const priceRaw = document.getElementById('inp-price').value.trim();
-  const compareRaw = document.getElementById('inp-compare').value.trim();
-
-  let isValid = true;
-  if (!title) {
-    markFieldError('inp-title', 'Product title is required.');
-    isValid = false;
-  } else if (title.length > 80) {
-    markFieldError('inp-title', 'Please keep title within 80 characters.');
-    isValid = false;
-  }
-
-  if (!subtitle) {
-    markFieldError('inp-subtitle', 'Short description is required.');
-    isValid = false;
-  } else if (subtitle.length > 100) {
-    markFieldError('inp-subtitle', 'Short description must be 100 characters or less.');
-    isValid = false;
-  }
-
-  if (!slug) {
-    markFieldError('inp-slug', 'Slug is required.');
-    isValid = false;
-  } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    markFieldError('inp-slug', 'Slug can contain lowercase letters, numbers, and hyphens only.');
-    isValid = false;
-  }
-
-  if (!description) {
-    markFieldError('inp-desc', 'Description is required.');
-    isValid = false;
-  }
-
-  if (!ctaText) {
-    markFieldError('inp-btn-text', 'CTA button text is required.');
-    isValid = false;
-  }
-
-  const priceValue = Number.parseFloat(priceRaw);
-  const compareValue = Number.parseFloat(compareRaw);
-  if (!isFree) {
-    if (priceRaw === '' || !Number.isFinite(priceValue)) {
-      markFieldError('inp-price', 'Price is required.');
-      isValid = false;
-    } else if (priceValue < 0) {
-      markFieldError('inp-price', 'Price cannot be negative.');
-      isValid = false;
-    }
-
-    if (compareRaw === '' || !Number.isFinite(compareValue)) {
-      markFieldError('inp-compare', 'Compare-at price is required.');
-      isValid = false;
-    } else if (compareValue < 0) {
-      markFieldError('inp-compare', 'Compare-at price cannot be negative.');
-      isValid = false;
-    } else if (Number.isFinite(priceValue) && compareValue < priceValue) {
-      markFieldError('inp-compare', 'Compare-at price should be greater than or equal to price.');
-      isValid = false;
-    }
-  }
-
-  const fileCardVisible = document.getElementById('file-card').style.display !== 'none';
-  if (fileCardVisible && selectedFileType === 'url') {
-    const fileUrl = document.getElementById('inp-file-url').value.trim();
-    if (!fileUrl) {
-      markFieldError('inp-file-url', 'Destination URL is required when using URL delivery.');
-      isValid = false;
-    } else if (!isValidUrl(fileUrl)) {
-      markFieldError('inp-file-url', 'Please enter a valid URL.');
-      isValid = false;
-    }
-  }
-
-  if (currentType === 'external_link') {
-    const externalUrlInput = document.getElementById('inp-external-url');
-    const externalUrl = externalUrlInput ? externalUrlInput.value.trim() : '';
-    if (!externalUrl) {
-      markFieldError('inp-external-url', 'Destination URL is required for external link products.');
-      isValid = false;
-    } else if (!isValidUrl(externalUrl)) {
-      markFieldError('inp-external-url', 'Please enter a valid destination URL.');
-      isValid = false;
-    }
-  }
-
-  return isValid;
-}
-
-function serializeCollectFields() {
-  return Array.from(document.querySelectorAll('#ci-list .ci-row')).map((row) => {
-    const name = row.querySelector('.ci-name')?.textContent?.trim() || '';
-    const type = row.querySelector('.ci-type')?.textContent?.trim() || 'text';
-    return { name, type };
-  });
-}
-
-function buildPayload() {
-  const apiType = SUPPORTED_TYPE_MAP[currentType];
-  if (!apiType) {
-    return null;
-  }
-
-  const isFree = document.getElementById('free-chk').checked;
-  const payload = {
-    type_code: apiType,
-    title: document.getElementById('inp-title').value.trim(),
-    slug: document.getElementById('inp-slug').value.trim(),
-    short_description: document.getElementById('inp-subtitle').value.trim(),
-    description: document.getElementById('inp-desc').value.trim(),
-    cta_text: document.getElementById('inp-btn-text').value.trim(),
-    price: isFree ? 0 : Number.parseFloat(document.getElementById('inp-price').value.trim()),
-    compare_at_price: isFree ? 0 : Number.parseFloat(document.getElementById('inp-compare').value.trim()),
-    is_free: isFree,
-    is_featured: Boolean(document.getElementById('feature-chk')?.checked),
-  };
-
-  if (window.SEND_ADVANCED_PRODUCT_CONFIG === true) {
-    payload.builder_config = {
-      ui_type: currentType,
-      headline: document.getElementById('inp-headline').value.trim(),
-      card_style: selectedCardStyle,
-      preview_emoji: selectedEmoji,
-      preview_background: selectedEmojiBackground,
-      file_delivery_type: selectedFileType,
-      file_url: document.getElementById('inp-file-url')?.value.trim() || null,
-      file_label: document.getElementById('inp-file-label')?.value.trim() || null,
-      external_url: document.getElementById('inp-external-url')?.value.trim() || null,
-      external_label: document.getElementById('inp-external-label')?.value.trim() || null,
-      publish_immediately: Boolean(document.getElementById('publish-now-chk')?.checked),
-      collect_fields: serializeCollectFields(),
-    };
-  }
-
-  return payload;
-}
-
-function saveDraft() {
-  const payload = buildPayload();
-  if (!payload) {
-    showToast('Draft saved locally (API type not supported yet).');
-    return;
-  }
-  try {
-    localStorage.setItem('creator_add_product_draft', JSON.stringify(payload));
-    showToast('Saved as draft ✓');
-    document.querySelector('.unsaved').style.background = '#059669';
-    setTimeout(() => { document.querySelector('.unsaved').style.background = '#F59E0B'; }, 2000);
-  } catch (error) {
-    showToast('Unable to save draft in browser storage.');
-  }
-}
-
-async function publishProduct() {
-  if (isSubmitting) {
-    return;
-  }
-  if (!apiClient) {
-    showToast('Axios is unavailable. Please refresh and try again.');
-    return;
-  }
-  if (!validateForm()) {
-    showToast('Please fix the highlighted fields.');
-    return;
-  }
-
-  const payload = buildPayload();
-  if (!payload) {
-    showToast('Selected product type is not supported by current API.');
-    return;
-  }
-
-  isSubmitting = true;
-  setPublishButtonState(true);
-  try {
-    const response = await apiClient.post('/api/platform/add-product', payload);
-    const data = response?.data || {};
-
-    if (data.code === 200) {
-      const productUuid = data?.data?.product_uuid || '';
-      showToast(data.message || 'Product created successfully.');
-      if (productUuid) {
-        const targetPath = `/product/${productUuid}`;
-        if (window.parent && window.parent !== window) {
-          window.parent.postMessage({
-            source: 'add-product-page',
-            type: 'navigate',
-            path: targetPath,
-          }, window.location.origin);
-          return;
+    <script>
+        let currentStyle = 'button';
+        let showBadge = true;
+
+        function selectStyle(style) {
+            currentStyle = style;
+            document.querySelectorAll('.style-option').forEach(el => {
+                el.classList.toggle('active', el.dataset.style === style);
+            });
+
+            const subtitleGroup = document.getElementById('subtitleGroup');
+            const emojiGroup = document.getElementById('emojiGroup');
+            const mediaSectionTitle = document.getElementById('mediaSectionTitle');
+
+            if (style === 'button') {
+                subtitleGroup.style.display = 'none';
+                emojiGroup.style.display = 'none';
+                mediaSectionTitle.style.display = 'none';
+            } else {
+                subtitleGroup.style.display = 'block';
+                emojiGroup.style.display = 'block';
+                mediaSectionTitle.style.display = 'block';
+                mediaSectionTitle.textContent = 'Icon / Emoji';
+            }
+
+            updatePreview();
         }
-        window.location.href = targetPath;
-        return;
-      }
-      document.getElementById('modal-subtitle').textContent = `"${payload.title}" is now live on your store.`;
-      document.getElementById('success-modal').style.display = 'flex';
-      return;
-    }
 
-    if (data.code === 600) {
-      applyApiErrors(data.errors);
-      showToast(data.message || 'Please fix the highlighted validation errors.');
-      return;
-    }
+        function toggleBadge() {
+            showBadge = !showBadge;
+            document.getElementById('badgeToggle').classList.toggle('active', showBadge);
+            document.getElementById('badgeFields').style.display = showBadge ? 'block' : 'none';
+            updatePreview();
+        }
 
-    showToast(data.message || 'Failed to create product. Please try again.');
-  } catch (error) {
-    const responseData = error?.response?.data || {};
-    applyApiErrors(responseData.errors);
-    showToast(responseData.message || 'Request failed while creating product.');
-  } finally {
-    isSubmitting = false;
-    setPublishButtonState(false);
-  }
-}
+        function getValues() {
+            return {
+                title: document.getElementById('inputTitle').value || 'Product Title',
+                subtitle: document.getElementById('inputSubtitle').value || 'Product subtitle text',
+                price: document.getElementById('inputPrice').value || '$0',
+                comparePrice: document.getElementById('inputComparePrice').value,
+                cta: document.getElementById('inputCta').value || 'Buy Now',
+                emoji: document.getElementById('inputEmoji').value || '🚀',
+                badge: document.getElementById('inputBadge').value || 'NEW',
+                badgeColor: document.getElementById('badgeColor').value,
+                btnColor: document.getElementById('inputBtnColor').value
+            };
+        }
 
-function copyProductUrl() {
-  const url = document.getElementById('modal-url').textContent.trim();
-  if (!navigator.clipboard) {
-    showToast('Clipboard is unavailable in this browser.');
-    return;
-  }
-  navigator.clipboard.writeText(url)
-    .then(() => showToast('Product URL copied!'))
-    .catch(() => showToast('Unable to copy URL.'));
-}
+        function buildBadgeHTML(v, positionStyle) {
+            if (!showBadge || !v.badge) return '';
+            return `<div class="card-badge ${v.badgeColor}" style="${positionStyle}">${v.badge}</div>`;
+        }
 
-function addAnotherProduct() {
-  closeModal();
-  document.getElementById('inp-title').value = '';
-  document.getElementById('inp-subtitle').value = '';
-  document.getElementById('inp-btn-text').value = 'Get Instant Access';
-  document.getElementById('inp-headline').value = '';
-  document.getElementById('inp-desc').value = '';
-  document.getElementById('inp-price').value = '';
-  document.getElementById('inp-compare').value = '';
-  document.getElementById('inp-slug').value = '';
-  document.getElementById('inp-slug').dataset.editedManually = '';
-  document.getElementById('free-chk').checked = false;
-  toggleFree(false);
-  clearFieldErrors();
-  updatePrev();
-  updateBtnText();
-  updateCPrev();
-  switchTab('thumb');
-  showToast('Ready for a new product.');
-}
+        function updatePreview() {
+            const v = getValues();
+            const container = document.getElementById('previewContainer');
+            document.getElementById('colorLabel').textContent = v.btnColor;
+            document.getElementById('emojiPreviewDisplay').textContent = v.emoji;
 
-function closeModal() {
-  document.getElementById('success-modal').style.display = 'none';
-}
+            let compareHTML = (priceClass, compareClass) => {
+                if (!v.comparePrice) return '';
+                return `<span class="${compareClass}">${v.comparePrice}</span>`;
+            };
 
-function showToast(msg) {
-  let toastNode = document.getElementById('toast');
-  if (!toastNode) {
-    toastNode = document.createElement('div');
-    toastNode.id = 'toast';
-    toastNode.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:#1a1a1a;color:#fff;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;';
-    document.body.appendChild(toastNode);
-  }
-  toastNode.textContent = msg;
-  setTimeout(() => {
-    toastNode.style.opacity = '1';
-    toastNode.style.transform = 'translateX(-50%) translateY(0)';
-  }, 10);
-  setTimeout(() => {
-    toastNode.style.opacity = '0';
-    toastNode.style.transform = 'translateX(-50%) translateY(16px)';
-  }, 2200);
-}
+            let cardHTML = '';
 
-const routeType = new URLSearchParams(window.location.search).get('type');
-const initialType = routeType === 'custom_service' ? 'coaching' : (TYPE_META[routeType] ? routeType : 'digital_download');
-const initialTypeMeta = TYPE_META[initialType] || TYPE_META.digital_download;
-selectType(initialType, initialTypeMeta.emoji, initialTypeMeta.name, '');
-applyCardStyle(selectedCardStyle);
-toggleFree(false);
-updateBtnText();
-updateCPrev();
-updatePrev();
-</script>
+            if (currentStyle === 'button') {
+                cardHTML = `
+                    <div class="store-frame">
+                        <div class="store-frame-header">
+                            <div class="store-dot"></div>
+                            <div class="store-dot"></div>
+                            <div class="store-dot"></div>
+                            <div class="store-frame-url">yourstore.com</div>
+                        </div>
+                        <div class="store-frame-body">
+                            <div class="card-button card-transition">
+                                ${buildBadgeHTML(v, 'top:12px;left:12px;')}
+                                <div class="card-title">${v.title}</div>
+                                <div class="card-price-row">
+                                    <span class="card-price">${v.price}</span>
+                                    ${compareHTML('card-compare-price', 'card-compare-price')}
+                                </div>
+                                <button class="card-cta" style="background:${v.btnColor};">${v.cta}</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (currentStyle === 'callout') {
+                cardHTML = `
+                    <div class="store-frame">
+                        <div class="store-frame-header">
+                            <div class="store-dot"></div>
+                            <div class="store-dot"></div>
+                            <div class="store-dot"></div>
+                            <div class="store-frame-url">yourstore.com</div>
+                        </div>
+                        <div class="store-frame-body">
+                            <div class="card-callout card-transition">
+                                ${buildBadgeHTML(v, 'top:-8px;left:-8px;')}
+                                <div class="callout-emoji">${v.emoji}</div>
+                                <div class="callout-content">
+                                    <div class="callout-title">${v.title}</div>
+                                    <div class="callout-subtitle">${v.subtitle}</div>
+                                    <div class="callout-bottom">
+                                        <div class="callout-prices">
+                                            <span class="callout-price">${v.price}</span>
+                                            ${v.comparePrice ? `<span class="callout-compare">${v.comparePrice}</span>` : ''}
+                                        </div>
+                                        <button class="callout-cta" style="background:${v.btnColor};">${v.cta}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (currentStyle === 'preview') {
+                cardHTML = `
+                    <div class="store-frame">
+                        <div class="store-frame-header">
+                            <div class="store-dot"></div>
+                            <div class="store-dot"></div>
+                            <div class="store-dot"></div>
+                            <div class="store-frame-url">yourstore.com</div>
+                        </div>
+                        <div class="store-frame-body">
+                            <div class="card-preview card-transition">
+                                ${buildBadgeHTML(v, 'top:12px;right:12px;left:auto;')}
+                                <div class="preview-emoji">${v.emoji}</div>
+                                <div class="preview-title">${v.title}</div>
+                                <div class="preview-subtitle">${v.subtitle}</div>
+                                <div class="preview-prices">
+                                    <span class="preview-price">${v.price}</span>
+                                    ${v.comparePrice ? `<span class="preview-compare">${v.comparePrice}</span>` : ''}
+                                </div>
+                                <button class="preview-cta" style="background:${v.btnColor};">${v.cta}</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = cardHTML;
+        }
+
+        // Initialize
+        selectStyle('button');
+    </script>
 </body>
 </html>
+

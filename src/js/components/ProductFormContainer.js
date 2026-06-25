@@ -3,7 +3,12 @@ import PageBreadcrumb from '/src/js/components/common/PageBreadcrumb.js';
 import ProductThumbnailTab from '/src/js/components/product/ProductThumbnailTab.js';
 import ProductCheckoutTab from '/src/js/components/product/ProductCheckoutTab.js';
 import ProductOptionsTab from '/src/js/components/product/ProductOptionsTab.js';
-import { createProductForm } from '/src/js/composables/useProductForm.js';
+import ProductStorePreview from '/src/js/components/product/ProductStorePreview.js';
+import {
+  createProductForm,
+  normalizeBadgeColor,
+  normalizeProductPayload,
+} from '/src/js/composables/useProductForm.js';
 
 const { webService } = await import(`/src/js/utils/webService.js?v=${v}`);
 
@@ -15,6 +20,7 @@ export default {
     ProductThumbnailTab,
     ProductCheckoutTab,
     ProductOptionsTab,
+    ProductStorePreview,
   },
   props: {
     initialPayload: {
@@ -40,6 +46,7 @@ export default {
       isHydratingDraft: false,
       activeTab: 'thumb',
       previewMode: 'card',
+      firstStepSaved: this.isEditMode || Boolean(this.initialPayload?.product_uuid),
       addFieldOptions: [
         { label: 'Phone', name: 'Phone Number', type: 'phone' },
         { label: 'Company', name: 'Company', type: 'text' },
@@ -58,6 +65,9 @@ export default {
     },
     isTypeSupported() {
       return Boolean(this.selectedType.apiType);
+    },
+    canAccessLaterTabs() {
+      return this.isEditMode || this.firstStepSaved;
     },
     shortDescriptionLength() {
       return this.form.subtitle.length;
@@ -198,6 +208,7 @@ export default {
           this.hydrateFromPayload(this.initialPayload);
           if (this.initialPayload.product_uuid) {
             this.draftProductUuid = this.initialPayload.product_uuid;
+            this.firstStepSaved = true;
           }
           this.draftLoaded = true;
         } catch (err) {
@@ -279,7 +290,7 @@ export default {
         if (!raw) {
           return;
         }
-        const payload = JSON.parse(raw);
+        const payload = normalizeProductPayload(JSON.parse(raw));
         if (!payload || typeof payload !== 'object') {
           return;
         }
@@ -296,6 +307,7 @@ export default {
         this.form.slug = payload.slug || '';
         this.form.metaTitle = seo.meta_title || payload.meta_title || '';
         this.form.metaDescription = seo.meta_description || payload.meta_description || '';
+        this.form.headline = builderConfig.headline || payload.headline || '';
         this.form.description = payload.description || '';
         this.form.ctaText = payload.cta_text || '';
         this.form.price = payload.price ?? '';
@@ -315,6 +327,10 @@ export default {
         this.form.fileName = builderConfig.file_label || payload.file_label || '';
         this.form.externalUrl = builderConfig.external_url || payload.external_url || '';
         this.form.externalLabel = builderConfig.external_label || payload.external_label || '';
+        this.form.cardButtonColor = builderConfig.card_button_color || payload.card_button_color || this.form.cardButtonColor;
+        this.form.cardBadgeEnabled = payload.card_badge_enabled ?? builderConfig.card_badge_enabled ?? this.form.cardBadgeEnabled;
+        this.form.badge_text = payload.badge_text || builderConfig.card_badge_text || payload.card_badge_text || this.form.badge_text;
+        this.form.badge_color = normalizeBadgeColor(payload.badge_color || builderConfig.card_badge_color || payload.card_badge_color || this.form.badge_color);
         this.form.externalShowAfterPurchase = typeSettings.show_after_purchase ?? payload.show_after_purchase ?? true;
         this.form.leadMagnetCtaLabel = typeSettings.cta_label || payload.cta_label || this.form.leadMagnetCtaLabel;
         this.form.leadMagnetSuccessMessage = typeSettings.success_message || payload.success_message || '';
@@ -332,6 +348,9 @@ export default {
         this.emoji = builderConfig.preview_emoji || payload.preview_emoji || this.emoji;
         this.emojiBackground = builderConfig.preview_background || payload.preview_background || this.emojiBackground;
         this.draftProductUuid = payload.product_uuid || '';
+        if (this.draftProductUuid) {
+          this.firstStepSaved = true;
+        }
 
         const collectFields = builderConfig.collect_fields || payload.collect_fields;
         if (Array.isArray(collectFields)) {
@@ -395,12 +414,27 @@ export default {
       this.validateServiceMeetingUrl();
     },
     switchTab(tabName) {
+      if (tabName !== 'thumb' && !this.canAccessLaterTabs) {
+        return;
+      }
+
       this.activeTab = tabName;
       if (tabName === 'checkout') {
         this.previewMode = 'checkout';
       } else {
         this.previewMode = 'card';
       }
+    },
+    scrollFormToTop() {
+      this.$nextTick(() => {
+        const tabContent = this.$el?.querySelector?.('.ap2-tab-content');
+        if (tabContent) {
+          tabContent.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        const formBuilder = this.$el?.querySelector?.('.ap2-wrap');
+        formBuilder?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      });
     },
     validateDraftForCurrentTab() {
       const validators = [
@@ -491,9 +525,14 @@ export default {
     },
     async handleNextAction() {
       if (this.activeTab === 'thumb' || this.activeTab === 'checkout') {
+        const completedTab = this.activeTab;
         const success = await this.saveFormAndContinue();
         if (success) {
-          this.switchTab(this.activeTab === 'thumb' ? 'checkout' : 'options');
+          if (completedTab === 'thumb' && !this.isEditMode) {
+            this.firstStepSaved = true;
+          }
+          this.switchTab(completedTab === 'thumb' ? 'checkout' : 'options');
+          this.scrollFormToTop();
         }
         return;
       }
@@ -853,6 +892,9 @@ export default {
         compare_at_price: this.form.isFree ? 0 : (isDraftMode && this.form.compareAtPrice === '' ? null : (Number.isNaN(numericCompareAtPrice) ? null : numericCompareAtPrice)),
         is_free: this.form.isFree,
         is_featured: this.form.isFeatured,
+        card_badge_enabled: this.form.cardBadgeEnabled,
+        badge_text: this.form.badge_text.trim() || null,
+        badge_color: normalizeBadgeColor(this.form.badge_color),
       };
       if (this.draftProductUuid) {
         payload.product_uuid = this.draftProductUuid;
@@ -863,6 +905,7 @@ export default {
         card_style: this.cardStyle,
         preview_emoji: this.emoji,
         preview_background: this.emojiBackground,
+        card_button_color: this.form.cardButtonColor || '#5B4FE9',
         headline: this.form.headline.trim(),
         file_delivery_type: this.form.fileDeliveryType,
         file_url: this.form.fileUrl.trim() || null,
@@ -950,6 +993,7 @@ export default {
     },
     hydrateFromPayload(payload) {
       if (!payload || typeof payload !== 'object') return;
+      payload = normalizeProductPayload(payload);
       const builderConfig = payload.builder_config || {};
       const seo = builderConfig.seo || {};
       const socialProof = builderConfig.social_proof || {};
@@ -963,6 +1007,7 @@ export default {
         slug: payload.slug || '',
         metaTitle: seo.meta_title || payload.meta_title || '',
         metaDescription: seo.meta_description || payload.meta_description || '',
+        headline: builderConfig.headline || payload.headline || '',
         description: payload.description || '',
         ctaText: payload.cta_text || '',
         price: payload.price ?? '',
@@ -982,6 +1027,21 @@ export default {
         fileName: builderConfig.file_label || payload.file_label || '',
         externalUrl: builderConfig.external_url || payload.external_url || '',
         externalLabel: builderConfig.external_label || payload.external_label || '',
+        cardButtonColor: builderConfig.card_button_color || payload.card_button_color || this.form.cardButtonColor,
+        cardBadgeEnabled: payload.card_badge_enabled ?? builderConfig.card_badge_enabled ?? this.form.cardBadgeEnabled,
+        badge_text: payload.badge_text || builderConfig.card_badge_text || payload.card_badge_text || this.form.badge_text,
+        badge_color: normalizeBadgeColor(payload.badge_color || builderConfig.card_badge_color || payload.card_badge_color || this.form.badge_color),
+        externalShowAfterPurchase: typeSettings.show_after_purchase ?? payload.show_after_purchase ?? true,
+        leadMagnetCtaLabel: typeSettings.cta_label || payload.cta_label || this.form.leadMagnetCtaLabel,
+        leadMagnetSuccessMessage: typeSettings.success_message || payload.success_message || '',
+        leadMagnetRedirectUrl: typeSettings.redirect_url || payload.redirect_url || '',
+        serviceSessionDuration: typeSettings.session_duration ?? payload.session_duration ?? this.form.serviceSessionDuration,
+        servicePlatform: typeSettings.platform || payload.platform || this.form.servicePlatform,
+        serviceBufferBefore: typeSettings.buffer_before ?? payload.buffer_before ?? this.form.serviceBufferBefore,
+        serviceBufferAfter: typeSettings.buffer_after ?? payload.buffer_after ?? this.form.serviceBufferAfter,
+        serviceMaxBookingsPerDay: typeSettings.max_bookings_per_day ?? payload.max_bookings_per_day ?? '',
+        serviceAdvanceBookingDays: typeSettings.advance_booking_days ?? payload.advance_booking_days ?? this.form.serviceAdvanceBookingDays,
+        serviceMeetingUrl: typeSettings.meeting_url || payload.meeting_url || '',
       });
 
       this.uiType = builderConfig.ui_type || payload.ui_type || this.uiType;
@@ -1016,8 +1076,24 @@ export default {
           <div class="ap2-tabs">
             <div class="ap2-tab-list">
               <button type="button" class="ap2-tab-btn" :class="activeTab === 'thumb' ? 'active' : ''" @click="switchTab('thumb')">1. Thumbnail</button>
-              <button type="button" class="ap2-tab-btn" :class="activeTab === 'checkout' ? 'active' : ''" @click="switchTab('checkout')">2. Checkout Page</button>
-              <button type="button" class="ap2-tab-btn" :class="activeTab === 'options' ? 'active' : ''" @click="switchTab('options')">3. Options</button>
+              <button
+                type="button"
+                class="ap2-tab-btn"
+                :class="activeTab === 'checkout' ? 'active' : ''"
+                :disabled="!canAccessLaterTabs"
+                @click="switchTab('checkout')"
+              >
+                2. Checkout Page
+              </button>
+              <button
+                type="button"
+                class="ap2-tab-btn"
+                :class="activeTab === 'options' ? 'active' : ''"
+                :disabled="!canAccessLaterTabs"
+                @click="switchTab('options')"
+              >
+                3. Options
+              </button>
               <span class="ap2-fixed-type">{{ selectedType.emoji }} {{ selectedType.name }}</span>
             </div>
             <button
@@ -1138,47 +1214,16 @@ export default {
           <div class="ap2-preview-label">PRODUCT PREVIEW</div>
 
           <div v-show="previewMode === 'card'" class="ap2-preview-wrap">
-            <div v-if="cardStyle === 'callout'" :class="previewCardClasses" :style="previewCalloutCardStyle">
-              <div class="ap2-pcard-image" :style="previewCalloutImageStyle">
-                {{ emoji }}
-                <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:9px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.9);">{{ previewTypeLabel }}</div>
-              </div>
-              <div class="ap2-pcard-body">
-                <div class="ap2-pcard-title" style="color:#fff;">{{ previewTitle }}</div>
-                <div class="ap2-pcard-subtitle" style="color:rgba(255,255,255,.9);">{{ previewSubtitle }}</div>
-                <div class="ap2-pcard-price-row">
-                  <div class="ap2-pcard-price" :class="form.isFree ? 'free' : ''" style="color:#fff;">{{ previewPrice }}</div>
-                  <div v-if="previewCompareAtPrice" class="ap2-pcard-compare" style="color:rgba(255,255,255,.85);">{{ previewCompareAtPrice }}</div>
-                </div>
-              </div>
-              <div class="ap2-pcard-btn" style="background:rgba(255,255,255,.18);color:#fff;">{{ form.ctaText || 'Get Instant Access' }}</div>
-            </div>
-
-            <div v-else-if="cardStyle === 'preview'" :class="previewCardClasses">
-              <div class="ap2-pcard-image" :style="previewClassicImageStyle">{{ emoji }}</div>
-              <div class="ap2-pcard-body" style="padding:10px 12px 6px;">
-                <div class="ap2-pcard-title" style="font-size:12.5px;">{{ previewTitle }}</div>
-                <div class="ap2-pcard-subtitle" style="font-size:10.5px;">{{ previewSubtitle }}</div>
-                <div class="ap2-pcard-price-row">
-                  <div class="ap2-pcard-price" :class="form.isFree ? 'free' : ''" style="font-size:15px;">{{ previewPrice }}</div>
-                  <div v-if="previewCompareAtPrice" class="ap2-pcard-compare">{{ previewCompareAtPrice }}</div>
-                </div>
-              </div>
-              <div class="ap2-pcard-btn" style="margin:0 12px 12px;border-radius:6px;padding:8px;font-size:11px;">{{ form.ctaText || 'Get Instant Access' }}</div>
-            </div>
-
-            <div v-else :class="previewCardClasses" style="padding:14px;">
-              <div class="ap2-pcard-image" :style="previewButtonImageStyle">{{ emoji }}</div>
-              <div class="ap2-pcard-body" style="padding:0 0 8px;">
-                <div class="ap2-pcard-title">{{ previewTitle }}</div>
-                <div class="ap2-pcard-subtitle">{{ previewSubtitle }}</div>
-                <div class="ap2-pcard-price-row" style="margin-bottom:8px;">
-                  <div class="ap2-pcard-price" :class="form.isFree ? 'free' : ''">{{ previewPrice }}</div>
-                  <div v-if="previewCompareAtPrice" class="ap2-pcard-compare">{{ previewCompareAtPrice }}</div>
-                </div>
-              </div>
-              <div class="ap2-pcard-btn" style="margin:0;border-radius:10px;">{{ form.ctaText || 'Get Instant Access' }}</div>
-            </div>
+            <product-store-preview
+              :card-style="cardStyle"
+              :form="form"
+              :emoji="emoji"
+              :emoji-background="emojiBackground"
+              :preview-title="previewTitle"
+              :preview-subtitle="previewSubtitle"
+              :preview-price="previewPrice"
+              :preview-compare-at-price="previewCompareAtPrice"
+            />
           </div>
 
           <div v-show="previewMode === 'checkout'" class="ap2-preview-wrap">
