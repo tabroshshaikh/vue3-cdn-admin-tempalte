@@ -46,7 +46,7 @@ export default {
       isHydratingDraft: false,
       activeTab: 'thumb',
       previewMode: 'card',
-      firstStepSaved: this.isEditMode || Boolean(this.initialPayload?.product_uuid),
+      firstStepSaved: this.isEditMode,
       addFieldOptions: [
         { label: 'Phone', name: 'Phone Number', type: 'phone' },
         { label: 'Company', name: 'Company', type: 'text' },
@@ -348,9 +348,6 @@ export default {
         this.emoji = builderConfig.preview_emoji || payload.preview_emoji || this.emoji;
         this.emojiBackground = builderConfig.preview_background || payload.preview_background || this.emojiBackground;
         this.draftProductUuid = payload.product_uuid || '';
-        if (this.draftProductUuid) {
-          this.firstStepSaved = true;
-        }
 
         const collectFields = builderConfig.collect_fields || payload.collect_fields;
         if (Array.isArray(collectFields)) {

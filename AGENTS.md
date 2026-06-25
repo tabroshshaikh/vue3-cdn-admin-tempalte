@@ -257,7 +257,7 @@ In add mode:
 3. Checkout and Options remain disabled until the Thumbnail form is successfully saved through the API.
 4. A successful first save returns a `product_uuid`, stores it in `draftProductUuid`, unlocks all tabs, opens Checkout, and smoothly scrolls the form to the top.
 5. Later draft saves use the update endpoint because the product now has a UUID.
-6. A server-saved draft restored with a `product_uuid` starts with all tabs unlocked.
+6. Restoring a local draft does not unlock later tabs. Thumbnail must save successfully in the current add-form session.
 
 Do not unlock later tabs from typing or localStorage alone. The first API save must succeed.
 
@@ -492,7 +492,7 @@ creator_add_product_draft
 ```
 
 Local draft data is normalized before hydration.
-A draft containing `product_uuid` represents a server-created product and uses the update endpoint on subsequent saves.
+A draft containing `product_uuid` represents a server-created product and uses the update endpoint on subsequent saves, but add-mode tabs remain locked until Thumbnail saves successfully in the current session.
 
 ### Standalone HTML
 
