@@ -1839,6 +1839,24 @@
   color: #9CA3AF;
 }
 
+/* Product list drag and drop styles */
+.sortable-ghost {
+  opacity: 0.4;
+  background: #e0e7ff;
+}
+
+.sortable-chosen {
+  background: #f3f4f6;
+  border-color: #6366f1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.sortable-drag {
+  background: white;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  z-index: 1000;
+}
+
 .dark .ap2-emoji-divider-line {
   background: #374151;
 }
