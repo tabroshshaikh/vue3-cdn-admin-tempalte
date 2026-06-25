@@ -2021,3 +2021,33 @@
     width: 100%;
   }
 }
+
+/* ─── Sortable Drag & Drop ─── */
+.sortable-ghost {
+  opacity: 0.4;
+  border: 2px dashed #5B4FE9 !important;
+  background: rgba(91, 79, 233, 0.04) !important;
+  border-radius: 16px;
+}
+
+.sortable-chosen {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12) !important;
+  border-color: #5B4FE9 !important;
+  z-index: 10;
+}
+
+.sortable-drag {
+  opacity: 0.9;
+  transform: scale(1.02);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15) !important;
+}
+
+.dark .sortable-ghost {
+  background: rgba(91, 79, 233, 0.08) !important;
+  border-color: #7C6FF0 !important;
+}
+
+.dark .sortable-chosen {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+  border-color: #7C6FF0 !important;
+}
