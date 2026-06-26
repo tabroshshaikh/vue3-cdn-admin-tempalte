@@ -2,542 +2,148 @@
 
 ## Project
 
-Vue 3 CDN-based SPA.
+Vue 3 CDN-based SPA. No build tools, no SFCs, ES modules only, static deployment.
 
-* No Vite
-* No Webpack
-* No npm build process
-* No Single File Components (*.vue)
-* ES Modules only
-* Static deployment
+## Loading
 
-## Tech Stack
+`index.html` loads Vue/Router/Axios via CDN `<script>` tags, then fetches `app-version.json` to set `window.APP_VERSION` for cache busting, then loads `/src/js/main.js` as a module.
 
-* Vue 3 (CDN)
-* Vue Router 4 (CDN)
-* Axios
-* Tailwind CSS
-* Laravel/Lumen APIs
+An alias `window.lazyLoad` is available (`() => import(\`${page}.js?v=${v}\`)`), but routes use inline `import()` with `?v=` directly.
 
 ## Architecture
 
-index.html
-→ main.js
-→ App.js
-→ Router
-→ Lazy Loaded Pages
+```
+App.js  →  ThemeProvider  →  SidebarProvider  →  RouterView
+                 ↓
+          AdminLayout (shared shell: AppSidebar + AppHeader + slot)
+```
 
-All pages are loaded using dynamic imports:
+All pages are lazy-loaded via dynamic `import()` with `?v=${v}` cache busting.
+
+## Routing (`src/js/router/index.js`)
+
+- Uses `createWebHistory()`
+- Protected routes use `meta: { requiresAuth: true }`
+- Auth check in `beforeEach` via `auth.isAuthenticated()`
+- Title set as `document.title = to.meta.title`
+
+Key routes:
+
+| Path | Component |
+|------|-----------|
+| `/login` | Auth/Login.js |
+| `/` (auth) | Ecommerce.js (dashboard) |
+| `/profile` | Profile.js |
+| `/products` | Products.js |
+| `/add-product?type={type_code}` | Add_Product.js |
+| `/product/:product_uuid` | Edit_Product.js |
+
+## Auth
+
+- Token stored in `localStorage.auth_token`
+- Axios interceptor in `src/js/utils/axios.js` attaches `Authorization: Bearer {token}` header
+- `auth.js` (plain object) provides `login()`, `logout()`, `isAuthenticated()`, `getToken()`
+
+## API Calls
+
+Use `webService` (`src/js/utils/webService.js`) for all HTTP. Never call Axios or Fetch directly.
 
 ```js
-() => import('/src/js/views/Profile.js?v=' + APP_VERSION)
+const response = await webService.post('/api/platform/add-product', payload)
 ```
 
-Always preserve cache busting.
+Response validation: `response.data.code === 200` for success, `600` for validation errors.
 
-## Rules
+Error handling: every call wrapped in try/catch with `console.error(error)`.
 
-### Components
+BASE_URL is configured in `src/js/config/env.js` (default `http://api.platform.local`).
 
-* One component per file
-* Export default component
-* Prefer Composition API
-* Keep business logic outside templates
+## Toast
 
-### Routing
+Global utility: `window.toast({ type: 'success'|'error'|'warning'|'info', message, duration })`.
 
-* All routes belong in router/index.js
-* Use lazy loading for pages
-* Use meta.title for page titles
-* Use meta.requiresAuth for protected routes
+## Styling
 
-Example:
-
-```js
-{
-    path: '/products',
-    component: () => import('/src/js/views/Products.js?v=' + APP_VERSION)
-}
-```
-
-### API Calls
-
-Never call axios directly from pages.
-
-Use services:
-
-```js
-ProductService.list()
-ProductService.create(payload)
-ProductService.update(id, payload)
-```
-
-Folder:
-
-```text
-src/js/services/
-```
-
-
-### Imports
-
-Prefer:
-
-```js
-import Component from '../components/Component.js'
-```
-
-Avoid hardcoded absolute paths unless already used by router.
-## API Client Standard
-
-Use `webService` for all HTTP requests.
-
-### Do
-
-```javascript
-const response = await webService.post('/api/platform/save-social-links', {
-    data
-});
-```
-
-```javascript
-const response = await webService.get('/api/products');
-```
-
-```javascript
-const response = await webService.put(`/api/products/${id}`, payload);
-```
-
-```javascript
-const response = await webService.delete(`/api/products/${id}`);
-```
-
-### Don't
-
-```javascript
-axios.post(...)
-```
-
-```javascript
-fetch(...)
-```
-
-Never call Axios or Fetch directly inside components.
-
-### Response Validation
-
-```javascript
-if (response.data.code === 200) {
-    // success
-}
-```
-
-### Error Handling
-
-All `webService` requests must be wrapped in:
-
-```javascript
-try {
-    const response = await webService.post(url, payload);
-} catch (error) {
-    console.error(error);
-}
-```
-
-### Benefits
-
-* Centralized authentication
-* Centralized headers
-* Common error handling
-* Request/response interceptors
-* Consistent API behavior across the application
-
-### Styling
-
-* Tailwind only
-* No inline styles
-* Mobile responsive
-* Reuse utility classes
-
-### Error Handling
-
-Every API call must:
-
-```js
-try {
-   ...
-} catch(error) {
-   console.error(error)
-}
-```
-
-Handle:
-
-* 401
-* 403
-* 422
-* 500
-
-
-### Performance
-
-* Lazy load pages
-* Use computed over methods when possible
-* Avoid unnecessary watchers
-* Keep CDN dependencies minimal
+Tailwind CSS + `app.css` with CSS custom properties (`--accent`, `--radius`, `--sidebar-w`, etc.) and ap2-* utility classes for the product builder.
 
 ## Product Module
 
-### Product Module Files
+### Files
 
-```text
-src/js/views/Products.js
-src/js/views/Add_Product.js
-src/js/views/Edit_Product.js
-src/js/components/ProductFormContainer.js
-src/js/components/product/ProductThumbnailTab.js
-src/js/components/product/ProductCheckoutTab.js
-src/js/components/product/ProductOptionsTab.js
-src/js/components/product/ProductStorePreview.js
-src/js/composables/useProductForm.js
+```
+views/Products.js               — product list (CRUD, drag-and-drop reorder)
+views/Add_Product.js             — wraps ProductFormContainer in add mode
+views/Edit_Product.js            — fetches product from API, wraps ProductFormContainer
+components/ProductFormContainer.js — shared form controller (state, validation, submission)
+components/product/              — presentational tab components + preview
+composables/useProductForm.js    — defaults, normalization, payload building
 ```
 
-`ProductFormContainer.js` is the shared form controller for both add and edit.
-Do not duplicate form state, validation, payload building, tab behavior, or submission logic in `Add_Product.js` or `Edit_Product.js`.
+### Endpoints
 
-`useProductForm.js` owns:
+| Action | Endpoint | Method |
+|--------|----------|--------|
+| List | `/api/platform/get-product-list` | GET |
+| Get single | `/api/platform/product/{product_uuid}` | GET |
+| Create | `/api/platform/add-product` | POST |
+| Update | `/api/platform/update-product` | POST |
+| Delete | `/update-status` (with `action: delete`) | POST |
+| Sort | `/api/platform/sort-products` | POST |
 
-* Default form state
-* Supported product types
-* Product response normalization
-* Legacy response compatibility
-* Badge color normalization
-* Shared payload helpers
+`Products.js` is an API-backed catalog with drag-and-drop (SortableJS loaded dynamically from CDN), publish/draft toggle, and delete.
 
-The three product tab components should remain presentational. They receive the shared form and emit events to `ProductFormContainer.js`.
+### Product Types
 
-### Routes
-
-```text
-/products
-/add-product?type={type_code}
-/product/:product_uuid
+```
+digital_download, lead_magnet, external_link, custom_service
 ```
 
-All product routes are defined in `src/js/router/index.js` and must remain lazy-loaded with cache busting.
+### Add Mode (Add_Product.js → ProductFormContainer)
 
-### Product List Behavior
+- Type comes from `?type=` query param
+- Only Thumbnail tab is initially accessible
+- Checkout + Options unlock only after the first successful API save (sets `firstStepSaved = true`)
+- On success, `product_uuid` returned by API is stored as `draftProductUuid`; subsequent saves hit the update endpoint
+- Restoring a local draft does NOT unlock tabs — must re-save through API first
 
-`src/js/views/Products.js` currently displays the available product types and links to the add-product route.
-It is a creation type chooser, not an API-backed product catalog table.
+### Edit Mode (Edit_Product.js → ProductFormContainer)
 
-Supported types:
+- Reads `product_uuid` from route param
+- Fetches via `webService.get('/api/platform/product/${uuid}')`
+- Normalizes response with `normalizeProductPayload()` from `useProductForm.js`
+- All tabs immediately available
 
-```text
-digital_download
-lead_magnet
-external_link
-custom_service
-```
+### Payload Structure
 
-Each type link must preserve:
+Payload built in `ProductFormContainer.buildPayload()`.
 
-```js
-/add-product?type={type_code}
-```
+Parent fields: `save_mode`, `product_uuid` (update only), `type_code`, `title`, `slug`, `short_description`, `description`, `cta_text`, `price`, `compare_at_price`, `is_free`, `is_featured`, `card_badge_enabled`, `badge_text`, `badge_color`.
 
-### Add Product Behavior
+Badge fields (`card_badge_enabled`, `badge_text`, `badge_color`) belong **only** at the parent level — do not duplicate in `builder_config` as `card_badge_enabled`, `card_badge_text`, `card_badge_color`.
 
-`Add_Product.js` only configures and renders `ProductFormContainer`.
+`builder_config` contains: `ui_type`, `card_style`, `preview_emoji`, `preview_background`, `card_button_color`, `headline`, `file_delivery_type`, `file_url`, `file_label`, `external_url`, `external_label`, `publish_immediately`, `scheduled_publish_at`, `social_proof`, `marketing_automation`, `confirmation_email`, `seo`, `type_settings`, `collect_fields`.
 
-In add mode:
+### Normalization
 
-1. The selected type comes from the `type` query parameter.
-2. Thumbnail is the only initially accessible tab.
-3. Checkout and Options remain disabled until the Thumbnail form is successfully saved through the API.
-4. A successful first save returns a `product_uuid`, stores it in `draftProductUuid`, unlocks all tabs, opens Checkout, and smoothly scrolls the form to the top.
-5. Later draft saves use the update endpoint because the product now has a UUID.
-6. Restoring a local draft does not unlock later tabs. Thumbnail must save successfully in the current add-form session.
+Always normalize through `normalizeProductPayload()`. The get-product response stores data across:
+- Response root (main fields)
+- `type_record` (type-specific values)
+- `marketing` (shared marketing values)
 
-Do not unlock later tabs from typing or localStorage alone. The first API save must succeed.
-
-### Edit Product Behavior
-
-`Edit_Product.js`:
-
-1. Reads `product_uuid` from the route.
-2. Calls:
-
-```js
-webService.get(`/api/platform/product/${uuid}`)
-```
-
-3. Normalizes the response with `normalizeProductPayload()`.
-4. Passes the normalized payload to `ProductFormContainer` with `isEditMode`.
-
-All tabs are immediately available in edit mode.
-
-The shared form submits an existing product to:
-
-```text
-POST /api/platform/update-product
-```
-
-The update payload must include `product_uuid`.
-
-### Add and Update API Endpoints
-
-```text
-POST /api/platform/add-product
-POST /api/platform/update-product
-GET  /api/platform/product/{product_uuid}
-```
-
-Use `webService` and validate:
-
-```js
-if (response.data.code === 200) {
-    // success
-}
-```
-
-Do not call Axios or Fetch directly.
-
-### Product Payload Structure
-
-The shared payload is built in `ProductFormContainer.buildPayload()`.
-
-Core parent fields include:
-
-```js
-{
-    save_mode,
-    product_uuid, // update only
-    type_code,
-    title,
-    slug,
-    short_description,
-    description,
-    cta_text,
-    price,
-    compare_at_price,
-    is_free,
-    is_featured,
-    card_badge_enabled,
-    badge_text,
-    badge_color,
-    builder_config
-}
-```
-
-Badge fields belong only at the parent level:
-
-```js
-card_badge_enabled
-badge_text
-badge_color
-```
-
-Do not add these obsolete duplicate keys to `builder_config`:
-
-```js
-card_badge_enabled
-card_badge_text
-card_badge_color
-```
-
-`builder_config` contains:
-
-```js
-{
-    ui_type,
-    card_style,
-    preview_emoji,
-    preview_background,
-    card_button_color,
-    headline,
-    file_delivery_type,
-    file_url,
-    file_label,
-    external_url,
-    external_label,
-    publish_immediately,
-    scheduled_publish_at,
-    social_proof,
-    marketing_automation,
-    confirmation_email,
-    seo,
-    type_settings,
-    collect_fields
-}
-```
-
-### Product Response Hydration
-
-Always normalize API and draft payloads through:
-
-```js
-normalizeProductPayload(payload)
-```
-
-The get-product response stores data in three places:
-
-* Main product fields at the response root
-* Type-specific values in `type_record`
-* Shared marketing values in `marketing`
-
-The normalizer handles numeric and string booleans, JSON `collect_fields`, legacy builder-config values, badge colors, scheduled date formatting, and type-specific records.
-
-Do not map the get-product response independently in multiple components.
-
-### Type-Specific Mapping
-
-#### Digital Download
-
-`type_record` maps:
-
-```text
-file_delivery_type → form.fileDeliveryType
-file_url           → form.fileUrl
-file_name          → form.fileName
-```
-
-Save through:
-
-```text
-builder_config.file_delivery_type
-builder_config.file_url
-builder_config.file_label
-```
-
-#### Lead Magnet
-
-`type_record` maps:
-
-```text
-cta_label       → form.leadMagnetCtaLabel
-success_message → form.leadMagnetSuccessMessage
-redirect_url    → form.leadMagnetRedirectUrl
-```
-
-Save under `builder_config.type_settings`.
-
-#### External Link
-
-`type_record` maps:
-
-```text
-destination_url     → form.externalUrl
-link_label          → form.externalLabel
-show_after_purchase → form.externalShowAfterPurchase
-```
-
-Save under `builder_config.type_settings`.
-
-#### Custom Service
-
-`type_record` maps:
-
-```text
-duration_minutes      → form.serviceSessionDuration
-platform              → form.servicePlatform
-buffer_before_minutes → form.serviceBufferBefore
-buffer_after_minutes  → form.serviceBufferAfter
-max_bookings_per_day  → form.serviceMaxBookingsPerDay
-advance_booking_days  → form.serviceAdvanceBookingDays
-custom_meeting_url    → form.serviceMeetingUrl
-```
-
-Save under `builder_config.type_settings`.
-
-### Marketing Mapping
-
-The get-product `marketing` object maps to:
-
-```text
-enable_reviews             → form.enableReviews
-email_flows                → form.emailFlows
-order_bumps                → form.orderBumps
-affiliate_share            → form.affiliateShare
-upsell_after_purchase      → form.upsellAfterPurchase
-confirmation_email_subject → form.emailSubject
-confirmation_email_body    → form.emailBody
-collect_fields             → collectFields
-```
-
-`marketing.collect_fields` may be a JSON string and must be parsed safely.
-Name and email fields remain locked in the UI.
-
-### Product Preview
-
-The right-side preview has Card and Checkout modes.
-
-`ProductStorePreview.js` renders card styles:
-
-```text
-button
-callout
-preview
-```
-
-Keep card and checkout typography and CTA sizing visually consistent.
-Badge color comes from `form.badge_color` and is exposed to CSS through `--ap2-badge-color`.
+The normalizer handles numeric/string booleans, JSON collect_fields, legacy badge colors, scheduled dates, and type-specific mapping.
 
 ### Draft Storage
 
-Local drafts use:
+Local drafts use `localStorage` key `creator_add_product_draft`. Draft data is normalized before hydration.
 
-```text
-creator_add_product_draft
-```
+### `add-product.html`
 
-Local draft data is normalized before hydration.
-A draft containing `product_uuid` represents a server-created product and uses the update endpoint on subsequent saves, but add-mode tabs remain locked until Thumbnail saves successfully in the current session.
+This standalone HTML file is **not** the SPA source of truth. Do not copy logic from it.
 
-### Standalone HTML
+## Gotchas
 
-`add-product.html` is not the source of truth for the Vue SPA product form.
-The active SPA flow is:
-
-```text
-Add_Product.js or Edit_Product.js
-→ ProductFormContainer.js
-→ product tab components
-→ useProductForm.js
-```
-
-Do not copy product logic into `add-product.html` unless the task explicitly targets that standalone page.
-
-## Before Commit
-
-Verify:
-
-* No build tool introduced
-* Vue 3 CDN architecture preserved
-* Dynamic imports still working
-* Routes updated if required
-* No console errors
-* Mobile responsive
-* API logic remains in services
-* Add and edit still use `ProductFormContainer`
-* Badge fields remain parent payload keys
-* All four product types hydrate and save through existing form fields
-* Add-mode tab locking still depends on successful first API save
-
-## Summary
-
-The admin app follows a straightforward Vue 3 architecture:
-
-index.html loads global dependencies and the app module.
-main.js creates and mounts the Vue app.
-App.js wraps the app in theme/sidebar providers and renders the active route.
-router/index.js manages protected routes and lazy-loaded pages.
-AdminLayout.js provides the shared admin shell.
-webService.js centralizes API communication through Axios.
-When modifying this project, preserve the separation between:
-
-Routing logic.
-Layout/providing logic.
-View-specific business logic.
-API communication.
-Validation and user feedback.
+- No `ProductService` layer exists — components import `webService` directly
+- Glob import path: `import('/src/js/views/Ecommerce.js?v=' + APP_VERSION)` — always preserve `?v=`
+- `collect_fields` may arrive as a JSON string from the API — must be parsed safely
+- `Products.js` now has full CRUD: it loads from API, allows reorder/drag-drop, status toggle, and delete
+- `auth.js` has an apparent bug: `USER_DATA_KEY` is referenced but never defined (used in `getUser()` / `updateUser()`)

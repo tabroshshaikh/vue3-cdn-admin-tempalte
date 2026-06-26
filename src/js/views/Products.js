@@ -20,6 +20,10 @@ export default {
       isAddModalOpen: false,
       openMenuId: null,
       sortableInstance: null,
+      isDeleteModalOpen: false,
+      productToDelete: null,
+      isDeleting: false,
+      deleteError: null,
       productTypes: [
         {
           label: 'Digital Download',
@@ -64,6 +68,50 @@ export default {
     }
   },
   methods: {
+    // Open delete confirmation modal
+    openDeleteConfirmation(product) {
+      this.productToDelete = product;
+      this.isDeleteModalOpen = true;
+      this.deleteError = null;
+      document.body.style.overflow = 'hidden';
+    },
+    
+    // Close delete confirmation modal
+    closeDeleteConfirmation() {
+      this.isDeleteModalOpen = false;
+      this.productToDelete = null;
+      this.deleteError = null;
+      document.body.style.overflow = '';
+    },
+    
+    // Confirm and execute product deletion
+    async confirmDelete() {
+      if (!this.productToDelete) return;
+      
+      this.isDeleting = true;
+      this.deleteError = null;
+      
+      try {
+        const response = await webService.post('/update-status', {
+          action: 'delete',
+          product_uuid: this.productToDelete.product_uuid
+        });
+        
+        if (response.data.code === 200) {
+          // Remove the product from the list
+          this.products = this.products.filter(p => p.product_uuid !== this.productToDelete.product_uuid);
+          this.closeDeleteConfirmation();
+        } else {
+          this.deleteError = response.data.message || 'Failed to delete product. Please try again.';
+        }
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        this.deleteError = error.message || 'An unexpected error occurred while deleting the product. Please try again.';
+      } finally {
+        this.isDeleting = false;
+      }
+    },
+    
     async loadProducts() {
       this.isLoading = true;
       try {
@@ -343,9 +391,9 @@ export default {
             
             <button 
               v-if="product.status !== 'archived'" 
-              @click="changeProductStatus(product, 'archived')" 
+              @click="openDeleteConfirmation(product)" 
               class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors dark:hover:text-red-400 dark:hover:bg-red-500/10"
-              title="Archive product"
+              title="Delete product"
             >
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -424,6 +472,73 @@ export default {
                     </svg>
                   </div>
                 </router-link>
+              </div>
+            </div>
+          </div>
+        </template>
+      </Modal>
+    </teleport>
+    
+    <!-- Delete Product Confirmation Modal -->
+    <teleport to="body">
+      <Modal v-if="isDeleteModalOpen" @close="closeDeleteConfirmation">
+        <template #body>
+          <div
+            class="relative z-10 mx-4 w-full max-w-sm overflow-y-auto rounded-3xl bg-white shadow-theme-lg dark:bg-gray-900"
+            @click.stop
+          >
+            <div class="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-800">
+              <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Delete Product?</h3>
+              <button
+                @click="closeDeleteConfirmation"
+                class="rounded-full p-2 text-gray-400 transition-all hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              >
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="rounded-b-3xl bg-gray-50 p-6 dark:bg-gray-800">
+              <div class="mb-6 flex flex-col items-center text-center">
+                <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <p class="text-base text-gray-700 dark:text-gray-300">
+                  Are you sure you want to delete <span class="font-semibold text-gray-900 dark:text-white/90">{{ productToDelete?.title }}</span>?
+                </p>
+              </div>
+
+              <div class="mb-6 rounded-xl bg-red-50 p-4 dark:bg-red-900/20">
+                <p class="text-sm font-semibold text-red-700 dark:text-red-400">This action cannot be undone.</p>
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400/80">Permanent removal of all associated records and analytics data.</p>
+              </div>
+
+              <div v-if="deleteError" class="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+                {{ deleteError }}
+              </div>
+
+              <div class="flex gap-3">
+                <button
+                  @click="closeDeleteConfirmation"
+                  :disabled="isDeleting"
+                  class="flex-1 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  @click="confirmDelete"
+                  :disabled="isDeleting"
+                  class="flex-1 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 inline-flex items-center justify-center gap-2 dark:bg-red-600 dark:hover:bg-red-500"
+                >
+                  <svg v-if="isDeleting" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {{ isDeleting ? 'Deleting...' : 'Delete' }}
+                </button>
               </div>
             </div>
           </div>
