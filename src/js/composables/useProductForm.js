@@ -101,7 +101,7 @@ export function normalizeProductPayload(source) {
   const badgeColor = payload.badge_color ?? payload.card_badge_color ?? builderConfig.card_badge_color;
   const publishImmediately = normalizeBoolean(
     payload.publish_immediately ?? builderConfig.publish_immediately,
-    true
+    false
   );
 
   const typeSettings = { ...existingTypeSettings };
@@ -295,7 +295,7 @@ export function createProductForm() {
     emailSubject: "🎉 You're in! Here's your access",
     emailBody: `Hey {{first_name}},\n\nThank you so much for your purchase! Here's how to access your product:\n\n{{product_access_link}}\n\nLet me know if you have any questions 🙌`,
     isFeatured: false,
-    publishImmediately: true,
+    publishImmediately: false,
     scheduledPublishAt: '',
     fileDeliveryType: 'upload',
     fileUrl: '',
@@ -317,6 +317,7 @@ export function createProductForm() {
     thumbnailUrl: '',
     checkoutBanner: '',
     checkoutBannerUrl: '',
+    productFileUrl: '',
     cardButtonColor: '#5B4FE9',
     cardBadgeEnabled: true,
     badge_text: 'BESTSELLER',
@@ -338,6 +339,8 @@ export function createProductForm() {
     price: { status: null, message: '' },
     compareAtPrice: { status: null, message: '' },
     fileUrl: { status: null, message: '' },
+    fileName: { status: null, message: '' },
+    productFile: { status: null, message: '' },
     externalUrl: { status: null, message: '' },
     leadMagnetRedirectUrl: { status: null, message: '' },
     serviceMeetingUrl: { status: null, message: '' },
@@ -402,7 +405,7 @@ export function createProductForm() {
       emailSubject: confirmationEmail.subject || payload.email_subject || form.emailSubject,
       emailBody: confirmationEmail.body || payload.email_body || form.emailBody,
       isFeatured: payload.is_featured ?? false,
-      publishImmediately: builderConfig.publish_immediately ?? payload.publish_immediately ?? true,
+      publishImmediately: builderConfig.publish_immediately ?? payload.publish_immediately ?? false,
       scheduledPublishAt: builderConfig.scheduled_publish_at || payload.scheduled_publish_at || '',
       fileDeliveryType: builderConfig.file_delivery_type || payload.file_delivery_type || 'upload',
       fileUrl: builderConfig.file_url || payload.file_url || '',

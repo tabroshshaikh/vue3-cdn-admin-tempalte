@@ -8,6 +8,10 @@ export default {
     addFieldOptions: Array,
     inputClasses: Function,
     textareaClasses: Function,
+    uiType: {
+      type: String,
+      default: 'digital_download',
+    },
     checkoutBannerUrl: {
       type: String,
       default: '',
@@ -25,10 +29,16 @@ export default {
     'input:compareAtPrice',
     'select:fileType',
     'input:fileUrl',
+    'input:fileName',
     'add:collectField',
     'remove:collectField',
+    'input:externalUrl',
+    'input:externalLabel',
+    'toggle:externalShowAfterPurchase',
     'upload:checkoutBanner',
     'remove:checkoutBanner',
+    'upload:productFile',
+    'remove:productFile',
     'toast',
   ],
   data() {
@@ -148,6 +158,21 @@ export default {
     removeBanner() {
       this.$emit('remove:checkoutBanner');
     },
+    triggerFileInput() {
+      this.$refs.fileInput.click();
+    },
+    onFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 50 * 1024 * 1024) {
+        this.$emit('toast', 'error', 'File must be under 50 MB.');
+        return;
+      }
+
+      this.$emit('upload:productFile', file);
+      event.target.value = '';
+    },
   },
   template: `
     <div class="ap2-section-stack">
@@ -262,21 +287,54 @@ export default {
         <div class="ap2-card-header">
           <h3 class="ap2-card-title">Product File</h3>
         </div>
-        <div class="ap2-card-body ap2-stack-sm">
-          <button type="button" class="ap2-file-type" :class="form.fileDeliveryType === 'upload' ? 'active' : ''" @click="$emit('select:fileType', 'upload')">
-            <span class="ap2-file-title">Upload a File</span>
-            <span class="ap2-file-subtitle">Direct upload - customers download immediately</span>
-          </button>
-          <div v-if="form.fileDeliveryType === 'upload'" class="ap2-upload-zone">
-            <div class="ap2-upload-icon">📎</div>
-            <p class="ap2-upload-title">Drag & drop your file here</p>
-            <p class="ap2-upload-hint">PDF, MP4, ZIP, PNG, PSD, XLS, SVG · Up to 5 GB</p>
+        <div class="ap2-card-body ap2-stack-md">
+          <div class="ap2-stack-xs">
+            <label class="ap2-radio-row" :class="form.fileDeliveryType === 'upload' ? 'active' : ''">
+              <input v-model="form.fileDeliveryType" value="upload" type="radio" class="sr-only" @change="$emit('select:fileType', 'upload')" />
+              <span class="ap2-radio-dot" :class="form.fileDeliveryType === 'upload' ? 'checked' : ''"></span>
+              <div>
+                <span class="ap2-radio-text font-semibold">Upload a File</span>
+                <span class="ap2-radio-sub">Direct upload - customers download immediately</span>
+              </div>
+            </label>
+            <label class="ap2-radio-row" :class="form.fileDeliveryType === 'url' ? 'active' : ''">
+              <input v-model="form.fileDeliveryType" value="url" type="radio" class="sr-only" @change="$emit('select:fileType', 'url')" />
+              <span class="ap2-radio-dot" :class="form.fileDeliveryType === 'url' ? 'checked' : ''"></span>
+              <div>
+                <span class="ap2-radio-text font-semibold">Redirect to URL</span>
+                <span class="ap2-radio-sub">Google Drive, Dropbox, Notion, etc.</span>
+              </div>
+            </label>
           </div>
 
-          <button type="button" class="ap2-file-type" :class="form.fileDeliveryType === 'url' ? 'active' : ''" @click="$emit('select:fileType', 'url')">
-            <span class="ap2-file-title">Redirect to URL</span>
-            <span class="ap2-file-subtitle">Google Drive, Dropbox, Notion, etc.</span>
-          </button>
+          <div v-if="form.fileDeliveryType === 'upload'" class="ap2-stack-sm">
+            <input ref="fileInput" type="file" class="hidden" @change="onFileSelect" />
+            <div v-if="!form.productFileUrl" class="ap2-upload-zone" @click="triggerFileInput">
+              <div class="ap2-upload-icon">📎</div>
+              <p class="ap2-upload-title">Click to upload your file</p>
+              <p class="ap2-upload-hint">Any format · Up to 50 MB</p>
+            </div>
+            <div v-else class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span class="text-2xl flex-shrink-0">📄</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-white truncate">{{ form.fileName || 'Uploaded file' }}</p>
+                    <a :href="form.productFileUrl" target="_blank" rel="noopener" class="text-xs text-brand-500 hover:underline">Download / Preview</a>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <button type="button" @click.stop="triggerFileInput" :disabled="isSubmitting" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+                    Replace
+                  </button>
+                  <button type="button" @click.stop="$emit('remove:productFile')" :disabled="isSubmitting" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-500/10">
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p v-if="validation.fileUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.fileUrl.message }}</p>
+          </div>
 
           <div v-if="form.fileDeliveryType === 'url'" class="ap2-stack-md">
             <div>
@@ -285,8 +343,41 @@ export default {
               <p v-if="validation.fileUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.fileUrl.message }}</p>
             </div>
             <div>
-              <label class="ap2-label">File / Product Name</label>
-              <input v-model="form.fileName" type="text" placeholder="e.g. Ultimate Creator Playbook.pdf" :class="inputClasses('fileUrl')" />
+              <label class="ap2-label">File / Product Name <span class="text-error-500">*</span></label>
+              <input v-model="form.fileName" type="text" placeholder="e.g. Ultimate Creator Playbook.pdf" :class="inputClasses('fileName')" @input="$emit('input:fileName')" />
+              <p v-if="validation.fileName.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.fileName.message }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="uiType === 'external_link'" class="ap2-card">
+        <div class="ap2-card-header">
+          <h3 class="ap2-card-title">External Link</h3>
+        </div>
+        <div class="ap2-card-body ap2-stack-md">
+          <div>
+            <label class="ap2-label">Destination URL <span class="text-error-500">*</span></label>
+            <input v-model="form.externalUrl" type="url" placeholder="https://example.com/your-link" :class="inputClasses('externalUrl')" @input="$emit('input:externalUrl')" />
+            <p v-if="validation.externalUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.externalUrl.message }}</p>
+          </div>
+          <div>
+            <label class="ap2-label">Link Label</label>
+            <input v-model="form.externalLabel" type="text" placeholder="e.g. Visit Website" class="ap2-input" @input="$emit('input:externalLabel')" />
+          </div>
+          <div>
+            <label class="ap2-label">Link after purchase</label>
+            <div class="ap2-stack-xs mt-1">
+              <label class="ap2-radio-row" :class="form.externalShowAfterPurchase ? 'active' : ''">
+                <input v-model="form.externalShowAfterPurchase" :value="true" type="radio" class="sr-only" @change="$emit('toggle:externalShowAfterPurchase')" />
+                <span class="ap2-radio-dot" :class="form.externalShowAfterPurchase ? 'checked' : ''"></span>
+                <span class="ap2-radio-text">Show on-screen after purchase</span>
+              </label>
+              <label class="ap2-radio-row" :class="!form.externalShowAfterPurchase ? 'active' : ''">
+                <input v-model="form.externalShowAfterPurchase" :value="false" type="radio" class="sr-only" @change="$emit('toggle:externalShowAfterPurchase')" />
+                <span class="ap2-radio-dot" :class="!form.externalShowAfterPurchase ? 'checked' : ''"></span>
+                <span class="ap2-radio-text">Send over email</span>
+              </label>
             </div>
           </div>
         </div>

@@ -234,13 +234,13 @@ export default {
             <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden" @change="onFileSelect" />
           </div>
 
-          <div class="ap2-emoji-divider">
+          <div v-if="!thumbnailUrl" class="ap2-emoji-divider">
             <div class="ap2-emoji-divider-line"></div>
             <span class="ap2-emoji-divider-label">OR PICK AN EMOJI STYLE</span>
             <div class="ap2-emoji-divider-line"></div>
           </div>
 
-          <div class="ap2-emoji-grid">
+          <div v-if="!thumbnailUrl" class="ap2-emoji-grid">
             <button
               v-for="option in emojiOptions"
               :key="option.emoji"

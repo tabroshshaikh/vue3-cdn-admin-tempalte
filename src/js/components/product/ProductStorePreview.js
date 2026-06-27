@@ -35,6 +35,10 @@ export default {
       type: String,
       default: '',
     },
+    thumbnailUrl: {
+      type: String,
+      default: '',
+    },
   },
   computed: {
     ctaText() {
@@ -60,7 +64,8 @@ export default {
         <div class="ap2-store-frame-body">
           <article v-if="cardStyle === 'callout'" class="ap2-store-card ap2-store-card-callout" :class="showBadge ? 'has-badge' : ''">
             <span v-if="showBadge" class="ap2-store-badge">{{ badgeText }}</span>
-            <div class="ap2-store-emoji">{{ emoji }}</div>
+            <div v-if="thumbnailUrl" class="ap2-store-emoji"><img :src="thumbnailUrl" alt="Thumbnail" class="h-full w-full object-cover" /></div>
+            <div v-else class="ap2-store-emoji">{{ emoji }}</div>
             <div class="ap2-store-callout-content">
               <h4 class="ap2-store-title">{{ previewTitle }}</h4>
               <p class="ap2-store-subtitle">{{ previewSubtitle }}</p>
@@ -76,7 +81,8 @@ export default {
 
           <article v-else-if="cardStyle === 'preview'" class="ap2-store-card ap2-store-card-preview" :class="showBadge ? 'has-badge' : ''">
             <span v-if="showBadge" class="ap2-store-badge">{{ badgeText }}</span>
-            <div class="ap2-store-emoji large">{{ emoji }}</div>
+            <div v-if="thumbnailUrl" class="ap2-store-emoji large"><img :src="thumbnailUrl" alt="Thumbnail" class="h-full w-full object-cover" /></div>
+            <div v-else class="ap2-store-emoji large">{{ emoji }}</div>
             <h4 class="ap2-store-title">{{ previewTitle }}</h4>
             <p class="ap2-store-subtitle">{{ previewSubtitle }}</p>
             <div class="ap2-store-prices centered">

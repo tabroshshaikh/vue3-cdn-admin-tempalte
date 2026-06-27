@@ -72,8 +72,7 @@ export default {
       return this.form.subtitle.length;
     },
     showFileCard() {
-      const noFileTypes = ['custom_service', 'external_link', 'lead_magnet'];
-      return !noFileTypes.includes(this.uiType);
+      return this.uiType === 'digital_download';
     },
     previewTitle() {
       return this.form.title.trim() || 'Add a title above ->';
@@ -157,7 +156,10 @@ export default {
       if (this.activeTab === 'checkout') {
         return 'Next: Options ->';
       }
-      return this.isEditMode ? 'Update Product' : 'Publish Product';
+      if (this.isEditMode) {
+        return 'Update Product';
+      }
+      return this.form.publishImmediately ? 'Publish Product' : 'Save as Draft';
     },
     showTypeSettings() {
       return ['custom_service', 'lead_magnet', 'external_link'].includes(this.uiType);
@@ -188,6 +190,8 @@ export default {
             this.emojiBackground = emojiOption.bg;
           }
         }
+      } else if (!this.isEditMode) {
+        this.setTypeFromQuery();
       }
     } else {
       if (!this.isEditMode) {
@@ -211,7 +215,7 @@ export default {
   },
   watch: {
     '$route.query.type'() {
-      if (!this.initialPayload && !this.isEditMode) {
+      if (!this.isEditMode) {
         this.setTypeFromQuery();
       }
     },
@@ -321,29 +325,26 @@ export default {
         validators.push(this.validatePrice());
         validators.push(this.validateCompareAtPrice());
         validators.push(this.validateFileUrl());
-      }
-
-      if (this.uiType === 'external_link') {
-        validators.push(this.validateExternalUrl());
-      }
-      if (this.uiType === 'custom_service') {
-        validators.push(this.validateServiceMeetingUrl());
-      }
-      if (this.uiType === 'lead_magnet') {
-        validators.push(this.validateLeadMagnetRedirectUrl());
+        if (this.uiType === 'external_link') {
+          validators.push(this.validateExternalUrl());
+        }
+        if (this.uiType === 'custom_service') {
+          validators.push(this.validateServiceMeetingUrl());
+        }
+        if (this.uiType === 'lead_magnet') {
+          validators.push(this.validateLeadMagnetRedirectUrl());
+        }
       }
 
       const isValid = validators.every(Boolean);
       if (!isValid) {
-        const currentTabFields = this.activeTab === 'checkout'
-          ? ['type', 'title', 'subtitle', 'slug', 'description', 'ctaText', 'price', 'compareAtPrice', 'fileUrl']
-          : ['type', 'title', 'subtitle', 'slug', 'ctaText'];
         const pendingFields = Object.keys(this.validation).filter((key) =>
-          currentTabFields.includes(key) && this.validation[key]?.status === 'error'
+          this.validation[key]?.status === 'error'
         );
 
         console.log('Draft validation failed for current tab', {
           tab: this.activeTab,
+          uiType: this.uiType,
           pendingFields,
           validation: this.validation,
         });
@@ -422,6 +423,9 @@ export default {
       try {
         const formData = new FormData();
         formData.append('thumbnail', croppedBlob, 'thumbnail.jpg');
+        if (this.draftProductUuid) {
+          formData.append('product_uuid', this.draftProductUuid);
+        }
 
         const response = await webService.post('/api/platform/upload-media', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -478,6 +482,47 @@ export default {
       this.form.checkoutBanner = '';
       this.form.checkoutBannerUrl = '';
     },
+    async handleProductFileUpload(file) {
+      if (!this.draftProductUuid) {
+        this.showToast('error', 'Please save the product first before uploading a file.');
+        return;
+      }
+
+      this.isSubmitting = true;
+      try {
+        const formData = new FormData();
+        formData.append('product_uuid', this.draftProductUuid);
+        formData.append('file', file);
+
+        const response = await webService.post('/api/platform/upload-media', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        if (response.data.code === 200) {
+          const filePath = response.data.data?.file_url || response.data.data?.url || '';
+          if (filePath) {
+            this.form.fileUrl = filePath;
+            this.form.productFileUrl = `${env.BASE_URL}/${filePath}`;
+            this.form.fileName = file.name;
+            this.showToast('success', 'File uploaded successfully.');
+          } else {
+            this.showToast('error', 'Failed to get file URL from response.');
+          }
+        } else {
+          this.showToast('error', response.data.message || 'Failed to upload file.');
+        }
+      } catch (error) {
+        console.error('Error uploading product file:', error);
+        this.showToast('error', error?.response?.data?.message || 'Failed to upload file.');
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+    handleProductFileRemove() {
+      this.form.fileUrl = '';
+      this.form.productFileUrl = '';
+      this.form.fileName = '';
+    },
     onTitleInput() {
       if (!this.slugEditedManually || !this.form.slug.trim()) {
         this.form.slug = this.slugify(this.form.title);
@@ -512,8 +557,30 @@ export default {
       this.validateCompareAtPrice();
     },
     selectFileType(type) {
+      const prevType = this.form.fileDeliveryType;
       this.form.fileDeliveryType = type;
+
+      if (prevType === 'upload' && type === 'url') {
+        this._savedUploadFile = {
+          fileUrl: this.form.fileUrl,
+          fileName: this.form.fileName,
+          productFileUrl: this.form.productFileUrl,
+        };
+        this.form.fileUrl = '';
+        this.form.fileName = '';
+      } else if (prevType === 'url' && type === 'upload') {
+        this.form.fileUrl = '';
+        this.form.fileName = '';
+        if (this._savedUploadFile) {
+          this.form.fileUrl = this._savedUploadFile.fileUrl;
+          this.form.fileName = this._savedUploadFile.fileName;
+          this.form.productFileUrl = this._savedUploadFile.productFileUrl;
+          this._savedUploadFile = null;
+        }
+      }
+
       this.validateFileUrl();
+      this.validateFileName();
     },
     onPublishImmediatelyChange() {
       if (this.form.publishImmediately) {
@@ -667,20 +734,59 @@ export default {
       return true;
     },
     validateFileUrl() {
-      if (!this.showFileCard || this.form.fileDeliveryType !== 'url') {
+      if (!this.showFileCard) {
         this.setValidationState('fileUrl', 'success', '');
+        this.setValidationState('fileName', 'success', '');
         return true;
       }
-      const value = this.form.fileUrl.trim();
-      if (!value) {
-        this.setValidationState('fileUrl', 'error', 'Destination URL is required for URL delivery.');
-        return false;
+
+      if (this.form.fileDeliveryType === 'url') {
+        const urlValue = this.form.fileUrl.trim();
+        const nameValue = this.form.fileName.trim();
+        let valid = true;
+
+        if (!urlValue) {
+          this.setValidationState('fileUrl', 'error', 'Destination URL is required for URL delivery.');
+          valid = false;
+        } else if (!this.isValidUrl(urlValue)) {
+          this.setValidationState('fileUrl', 'error', 'Please enter a valid URL.');
+          valid = false;
+        } else {
+          this.setValidationState('fileUrl', 'success', '');
+        }
+
+        if (!nameValue) {
+          this.setValidationState('fileName', 'error', 'File / Product Name is required for URL delivery.');
+          valid = false;
+        } else {
+          this.setValidationState('fileName', 'success', '');
+        }
+
+        return valid;
       }
-      if (!this.isValidUrl(value)) {
-        this.setValidationState('fileUrl', 'error', 'Please enter a valid URL.');
-        return false;
+
+      if (this.form.fileDeliveryType === 'upload') {
+        if (!this.form.fileUrl) {
+          this.setValidationState('fileUrl', 'error', 'Please upload a product file.');
+          return false;
+        }
       }
+
       this.setValidationState('fileUrl', 'success', '');
+      this.setValidationState('fileName', 'success', '');
+      return true;
+    },
+    validateFileName() {
+      if (!this.showFileCard || this.form.fileDeliveryType !== 'url') {
+        this.setValidationState('fileName', 'success', '');
+        return true;
+      }
+      const value = this.form.fileName.trim();
+      if (!value) {
+        this.setValidationState('fileName', 'error', 'File / Product Name is required for URL delivery.');
+        return false;
+      }
+      this.setValidationState('fileName', 'success', '');
       return true;
     },
     validateExternalUrl() {
@@ -736,20 +842,25 @@ export default {
     },
     validateForm() {
       const validators = [
-        this.validateSupportedType(),
-        this.validateTitle(),
-        this.validateSubtitle(),
-        this.validateSlug(),
-        this.validateDescription(),
-        this.validateCtaText(),
-        this.validatePrice(),
-        this.validateCompareAtPrice(),
-        this.validateFileUrl(),
-        this.validateExternalUrl(),
-        this.validateLeadMagnetRedirectUrl(),
-        this.validateServiceMeetingUrl(),
+        { name: 'type', result: this.validateSupportedType() },
+        { name: 'title', result: this.validateTitle() },
+        { name: 'subtitle', result: this.validateSubtitle() },
+        { name: 'slug', result: this.validateSlug() },
+        { name: 'description', result: this.validateDescription() },
+        { name: 'ctaText', result: this.validateCtaText() },
+        { name: 'price', result: this.validatePrice() },
+        { name: 'compareAtPrice', result: this.validateCompareAtPrice() },
+        { name: 'fileUrl', result: this.validateFileUrl() },
+        { name: 'fileName', result: this.validateFileName() },
+        { name: 'externalUrl', result: this.validateExternalUrl() },
+        { name: 'leadMagnetRedirectUrl', result: this.validateLeadMagnetRedirectUrl() },
+        { name: 'serviceMeetingUrl', result: this.validateServiceMeetingUrl() },
       ];
-      return validators.every(Boolean);
+      const failed = validators.filter((v) => !v.result);
+      if (failed.length) {
+        console.log('Validation failed for:', failed.map((v) => v.name), 'uiType:', this.uiType);
+      }
+      return validators.every((v) => v.result);
     },
     resetValidationState() {
       Object.keys(this.validation).forEach((key) => {
@@ -770,6 +881,7 @@ export default {
         compare_at_price: 'compareAtPrice',
         destination_url: 'externalUrl',
         file_url: 'fileUrl',
+        file_name: 'fileName',
         redirect_url: 'leadMagnetRedirectUrl',
         meeting_url: 'serviceMeetingUrl',
       };
@@ -885,15 +997,17 @@ export default {
         return;
       }
 
+      const saveMode = this.form.publishImmediately ? 'publish' : 'draft';
       this.isSubmitting = true;
       try {
-        const payload = this.buildPayload('publish');
+        const payload = this.buildPayload(saveMode);
         const endpoint = this.getProductEndpoint();
         const response = await webService.post(endpoint, payload);
 
         if (response.data.code === 200) {
           const productUuid = this.resolveProductUuidFromResponse(response.data) || this.draftProductUuid;
-          const successMessage = this.isEditMode ? 'Product updated successfully.' : 'Product created successfully.';
+          const action = saveMode === 'publish' ? 'published' : 'saved as draft';
+          const successMessage = this.isEditMode ? 'Product updated successfully.' : `Product ${action} successfully.`;
           this.showToast('success', response.data.message || successMessage);
           if (productUuid) {
             this.$router.push(`/product/${productUuid}`);
@@ -921,6 +1035,7 @@ export default {
     },
     hydrateFromPayload(payload) {
       if (!payload || typeof payload !== 'object') return;
+      const hasExplicitType = Boolean(payload.type_code || payload.ui_type || payload.builder_config?.ui_type || payload.product_uuid);
       payload = normalizeProductPayload(payload);
       const builderConfig = payload.builder_config || {};
       const seo = builderConfig.seo || {};
@@ -972,7 +1087,9 @@ export default {
         serviceMeetingUrl: typeSettings.meeting_url || payload.meeting_url || '',
       });
 
-      this.uiType = builderConfig.ui_type || payload.ui_type || this.uiType;
+      if (hasExplicitType) {
+        this.uiType = builderConfig.ui_type || payload.ui_type || this.uiType;
+      }
       this.cardStyle = builderConfig.card_style || payload.card_style || this.cardStyle;
       this.emoji = builderConfig.preview_emoji || payload.preview_emoji || this.emoji;
       this.emojiBackground = builderConfig.preview_background || payload.preview_background || this.emojiBackground;
@@ -982,6 +1099,8 @@ export default {
       const bannerRaw = payload.checkout_banner_url || builderConfig.checkout_banner || payload.checkout_banner || '';
       this.form.checkoutBanner = bannerRaw;
       this.form.checkoutBannerUrl = bannerRaw ? `${env.BASE_URL}/${bannerRaw}` : '';
+      const fileRaw = this.form.fileUrl;
+      this.form.productFileUrl = fileRaw ? `${env.BASE_URL}/${fileRaw}` : '';
       this.draftProductUuid = payload.product_uuid || '';
 
       const collectFields = builderConfig.collect_fields || payload.collect_fields;
@@ -1037,7 +1156,7 @@ export default {
               :disabled="!isTypeSupported || isSubmitting"
               @click="submitProduct"
             >
-              {{ isSubmitting ? (isEditMode ? 'Updating...' : 'Publishing...') : (isEditMode ? 'Update Product' : 'Publish Product') }}
+              {{ isSubmitting ? (isEditMode ? 'Updating...' : 'Saving...') : (isEditMode ? 'Update Product' : (form.publishImmediately ? 'Publish Product' : 'Save as Draft')) }}
             </button>
           </div>
 
@@ -1087,6 +1206,7 @@ export default {
               :addFieldOptions="addFieldOptions"
               :inputClasses="inputClasses"
               :textareaClasses="textareaClasses"
+              :uiType="uiType"
               :checkoutBannerUrl="form.checkoutBannerUrl"
               :isSubmitting="isSubmitting"
               @input:headline="validateDescription"
@@ -1096,10 +1216,16 @@ export default {
               @input:compareAtPrice="validateCompareAtPrice"
               @select:fileType="selectFileType"
               @input:fileUrl="validateFileUrl"
+              @input:fileName="validateFileName"
+              @input:externalUrl="validateExternalUrl"
+              @input:externalLabel="() => {}"
+              @toggle:externalShowAfterPurchase="() => {}"
               @add:collectField="addCollectField"
               @remove:collectField="removeCollectField"
               @upload:checkoutBanner="handleCheckoutBannerUpload"
               @remove:checkoutBanner="handleCheckoutBannerRemove"
+              @upload:productFile="handleProductFileUpload"
+              @remove:productFile="handleProductFileRemove"
               @toast="showToast"
             />
 
@@ -1165,6 +1291,7 @@ export default {
               :preview-subtitle="previewSubtitle"
               :preview-price="previewPrice"
               :preview-compare-at-price="previewCompareAtPrice"
+              :thumbnail-url="form.thumbnailUrl"
             />
           </div>
 
