@@ -92,8 +92,8 @@ export default {
       this.deleteError = null;
       
       try {
-        const response = await webService.post('/update-status', {
-          action: 'delete',
+        const response = await webService.post('/api/platform/update-product-status', {
+          status: 'archived',
           product_uuid: this.productToDelete.product_uuid
         });
         
@@ -139,6 +139,10 @@ export default {
     closeModal() {
       this.isAddModalOpen = false;
       document.body.style.overflow = '';
+    },
+    getProductTypeLabel(type) {
+      const found = this.productTypes.find(t => t.type === type);
+      return found ? found.label : type;
     },
     getIconBgClass(type) {
       const map = {
@@ -484,60 +488,82 @@ export default {
       <Modal v-if="isDeleteModalOpen" @close="closeDeleteConfirmation">
         <template #body>
           <div
-            class="relative z-10 mx-4 w-full max-w-sm overflow-y-auto rounded-3xl bg-white shadow-theme-lg dark:bg-gray-900"
+            class="relative z-10 mx-4 w-full max-w-md overflow-y-auto rounded-2xl bg-white shadow-xl dark:bg-gray-900"
             @click.stop
           >
-            <div class="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-800">
-              <h3 class="text-xl font-semibold text-gray-800 dark:text-white/90">Delete Product?</h3>
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white"></h3>
               <button
                 @click="closeDeleteConfirmation"
-                class="rounded-full p-2 text-gray-400 transition-all hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                class="rounded-full p-1.5 text-gray-400 transition-all hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
               >
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div class="rounded-b-3xl bg-gray-50 p-6 dark:bg-gray-800">
-              <div class="mb-6 flex flex-col items-center text-center">
-                <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                  <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <!-- Body -->
+            <div class="px-6 py-5">
+              <!-- Danger Illustration -->
+              <div class="flex flex-col items-center text-center">
+                <div class="mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-red-100 dark:bg-red-500/15">
+                  <svg class="h-8 w-8 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </div>
-                <p class="text-base text-gray-700 dark:text-gray-300">
-                  Are you sure you want to delete <span class="font-semibold text-gray-900 dark:text-white/90">{{ productToDelete?.title }}</span>?
-                </p>
+                <h4 class="text-[32px] font-bold leading-tight text-[#111827] dark:text-white">Delete Product?</h4>
               </div>
 
-              <div class="mb-6 rounded-xl bg-red-50 p-4 dark:bg-red-900/20">
-                <p class="text-sm font-semibold text-red-700 dark:text-red-400">This action cannot be undone.</p>
-                <p class="mt-1 text-xs text-red-600 dark:text-red-400/80">Permanent removal of all associated records and analytics data.</p>
+              <!-- Product Summary Card -->
+              <div class="mt-5 flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-2xl shadow-sm border border-gray-100 dark:border-gray-700 dark:bg-gray-900">
+                  <span v-if="productToDelete?.preview_emoji">{{ productToDelete.preview_emoji }}</span>
+                  <span v-else>📦</span>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold text-gray-800 dark:text-white">{{ productToDelete?.title }}</p>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ getProductTypeLabel(productToDelete?.type_code) }}</p>
+                </div>
               </div>
 
-              <div v-if="deleteError" class="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+              <!-- Copy -->
+              <p class="mt-5 text-center text-sm text-gray-600 dark:text-gray-400">
+                You're about to permanently delete this product.
+              </p>
+              <p class="mt-1 text-center text-sm text-gray-600 dark:text-gray-400">
+ All associated order history, analytics, customer data, and downloads linked to this product will be permanently deleted.               </p>
+
+              
+
+              <!-- Error -->
+              <div v-if="deleteError" class="mt-4 rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-400">
                 {{ deleteError }}
               </div>
 
-              <div class="flex gap-3">
+              <!-- Buttons -->
+              <div class="mt-6 flex gap-4">
                 <button
                   @click="closeDeleteConfirmation"
                   :disabled="isDeleting"
-                  class="flex-1 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  class="flex h-12 flex-1 items-center justify-center rounded-xl border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-transparent dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                 >
                   Cancel
                 </button>
                 <button
                   @click="confirmDelete"
                   :disabled="isDeleting"
-                  class="flex-1 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 inline-flex items-center justify-center gap-2 dark:bg-red-600 dark:hover:bg-red-500"
+                  class="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-600 dark:hover:bg-red-500"
                 >
                   <svg v-if="isDeleting" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {{ isDeleting ? 'Deleting...' : 'Delete' }}
+                  <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  {{ isDeleting ? 'Deleting...' : 'Yes, Delete Product' }}
                 </button>
               </div>
             </div>

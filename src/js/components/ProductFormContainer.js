@@ -11,6 +11,7 @@ import {
 } from '/src/js/composables/useProductForm.js';
 
 const { webService } = await import(`/src/js/utils/webService.js?v=${v}`);
+const { env } = await import(`/src/js/config/env.js?v=${v}`);
 
 export default {
   name: 'ProductFormContainer',
@@ -42,8 +43,6 @@ export default {
       currentPageTitle: this.pageTitle,
       isSubmitting: false,
       slugEditedManually: false,
-      draftLoaded: false,
-      isHydratingDraft: false,
       activeTab: 'thumb',
       previewMode: 'card',
       firstStepSaved: this.isEditMode,
@@ -177,8 +176,6 @@ export default {
     },
   },
   mounted() {
-    this.isHydratingDraft = true;
-
     if (this.initialPayload) {
       const typeCode = this.initialPayload.type_code || this.initialPayload.ui_type;
       if (typeCode) {
@@ -193,15 +190,11 @@ export default {
         }
       }
     } else {
-      // In edit mode, initialPayload may arrive async after API fetch.
-      // Don't force query.type selection in that case (prevents "No product type specified..." alert).
       if (!this.isEditMode) {
         this.setTypeFromQuery();
       }
     }
 
-    this.loadDraft();
-    window.addEventListener('beforeunload', this.handleBeforeUnload);
     this.$nextTick(() => {
       if (this.initialPayload) {
         try {
@@ -210,16 +203,11 @@ export default {
             this.draftProductUuid = this.initialPayload.product_uuid;
             this.firstStepSaved = true;
           }
-          this.draftLoaded = true;
         } catch (err) {
           console.warn('Failed to hydrate initial payload', err);
         }
       }
-      this.isHydratingDraft = false;
     });
-  },
-  beforeUnmount() {
-    window.removeEventListener('beforeunload', this.handleBeforeUnload);
   },
   watch: {
     '$route.query.type'() {
@@ -248,126 +236,12 @@ export default {
         toast({ type, message, duration });
       }
     },
-    draftStorageKey() {
-      return 'creator_add_product_draft';
-    },
-    clearDraft() {
-      try {
-        localStorage.removeItem(this.draftStorageKey());
-        this.draftLoaded = false;
-        this.draftProductUuid = '';
-      } catch (error) {
-        console.warn('Unable to clear draft', error);
-      }
-    },
-    persistLocalDraft() {
-      try {
-        const payload = this.buildPayload('draft');
-        payload._local_saved_at = Date.now();
-        localStorage.setItem(this.draftStorageKey(), JSON.stringify(payload));
-        this.draftLoaded = true;
-      } catch (error) {
-        console.warn('Unable to save local draft', error);
-      }
-    },
-    handleBeforeUnload(event) {
-      if (!this.hasUnsavedChanges) {
-        return;
-      }
-      event.preventDefault();
-      event.returnValue = '';
-    },
     resolveProductUuidFromResponse(responseData) {
       const data = responseData?.data || {};
       return data.product_uuid || '';
     },
     getProductEndpoint() {
       return this.draftProductUuid ? '/api/platform/update-product' : '/api/platform/add-product';
-    },
-    loadDraft() {
-      try {
-        const raw = localStorage.getItem(this.draftStorageKey());
-        if (!raw) {
-          return;
-        }
-        const payload = normalizeProductPayload(JSON.parse(raw));
-        if (!payload || typeof payload !== 'object') {
-          return;
-        }
-
-        const builderConfig = payload.builder_config || {};
-        const seo = builderConfig.seo || {};
-        const socialProof = builderConfig.social_proof || {};
-        const marketing = builderConfig.marketing_automation || {};
-        const confirmationEmail = builderConfig.confirmation_email || {};
-        const typeSettings = builderConfig.type_settings || {};
-
-        this.form.title = payload.title || '';
-        this.form.subtitle = payload.short_description || payload.subtitle || '';
-        this.form.slug = payload.slug || '';
-        this.form.metaTitle = seo.meta_title || payload.meta_title || '';
-        this.form.metaDescription = seo.meta_description || payload.meta_description || '';
-        this.form.headline = builderConfig.headline || payload.headline || '';
-        this.form.description = payload.description || '';
-        this.form.ctaText = payload.cta_text || '';
-        this.form.price = payload.price ?? '';
-        this.form.compareAtPrice = payload.compare_at_price ?? '';
-        this.form.enableReviews = socialProof.enable_reviews ?? payload.enable_reviews ?? true;
-        this.form.emailFlows = marketing.email_flows ?? payload.email_flows ?? false;
-        this.form.orderBumps = marketing.order_bumps ?? payload.order_bumps ?? false;
-        this.form.affiliateShare = marketing.affiliate_share ?? payload.affiliate_share ?? false;
-        this.form.upsellAfterPurchase = marketing.upsell_after_purchase ?? payload.upsell_after_purchase ?? false;
-        this.form.emailSubject = confirmationEmail.subject || payload.email_subject || this.form.emailSubject;
-        this.form.emailBody = confirmationEmail.body || payload.email_body || this.form.emailBody;
-        this.form.isFeatured = payload.is_featured ?? false;
-        this.form.publishImmediately = builderConfig.publish_immediately ?? payload.publish_immediately ?? true;
-        this.form.scheduledPublishAt = builderConfig.scheduled_publish_at || payload.scheduled_publish_at || '';
-        this.form.fileDeliveryType = builderConfig.file_delivery_type || payload.file_delivery_type || 'upload';
-        this.form.fileUrl = builderConfig.file_url || payload.file_url || '';
-        this.form.fileName = builderConfig.file_label || payload.file_label || '';
-        this.form.externalUrl = builderConfig.external_url || payload.external_url || '';
-        this.form.externalLabel = builderConfig.external_label || payload.external_label || '';
-        this.form.cardButtonColor = builderConfig.card_button_color || payload.card_button_color || this.form.cardButtonColor;
-        this.form.cardBadgeEnabled = payload.card_badge_enabled ?? builderConfig.card_badge_enabled ?? this.form.cardBadgeEnabled;
-        this.form.badge_text = payload.badge_text || builderConfig.card_badge_text || payload.card_badge_text || this.form.badge_text;
-        this.form.badge_color = normalizeBadgeColor(payload.badge_color || builderConfig.card_badge_color || payload.card_badge_color || this.form.badge_color);
-        this.form.externalShowAfterPurchase = typeSettings.show_after_purchase ?? payload.show_after_purchase ?? true;
-        this.form.leadMagnetCtaLabel = typeSettings.cta_label || payload.cta_label || this.form.leadMagnetCtaLabel;
-        this.form.leadMagnetSuccessMessage = typeSettings.success_message || payload.success_message || '';
-        this.form.leadMagnetRedirectUrl = typeSettings.redirect_url || payload.redirect_url || '';
-        this.form.serviceSessionDuration = typeSettings.session_duration || payload.session_duration || this.form.serviceSessionDuration;
-        this.form.servicePlatform = typeSettings.platform || payload.platform || this.form.servicePlatform;
-        this.form.serviceBufferBefore = typeSettings.buffer_before || payload.buffer_before || this.form.serviceBufferBefore;
-        this.form.serviceBufferAfter = typeSettings.buffer_after || payload.buffer_after || this.form.serviceBufferAfter;
-        this.form.serviceMaxBookingsPerDay = typeSettings.max_bookings_per_day || payload.max_bookings_per_day || '';
-        this.form.serviceAdvanceBookingDays = typeSettings.advance_booking_days || payload.advance_booking_days || this.form.serviceAdvanceBookingDays;
-        this.form.serviceMeetingUrl = typeSettings.meeting_url || payload.meeting_url || '';
-
-        this.uiType = builderConfig.ui_type || payload.ui_type || this.uiType || 'digital_download';
-        this.cardStyle = builderConfig.card_style || payload.card_style || this.cardStyle;
-        this.emoji = builderConfig.preview_emoji || payload.preview_emoji || this.emoji;
-        this.emojiBackground = builderConfig.preview_background || payload.preview_background || this.emojiBackground;
-        this.draftProductUuid = payload.product_uuid || '';
-
-        const collectFields = builderConfig.collect_fields || payload.collect_fields;
-        if (Array.isArray(collectFields)) {
-          this.collectFields = collectFields.map((field) => ({
-            id: `${field.type}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-            name: field.name || '',
-            type: field.type || 'text',
-            locked: field.locked ?? false,
-          }));
-        }
-
-        this.form.isFree = payload.is_free ?? false;
-        if (payload.is_free === undefined && (this.form.price === '0' || this.form.price === '0.00' || this.form.price === '' || this.form.price === 0)) {
-          this.form.isFree = true;
-        }
-
-        this.draftLoaded = true;
-      } catch (error) {
-        console.warn('Unable to load draft', error);
-      }
     },
     slugify(value) {
       return String(value || '')
@@ -484,7 +358,6 @@ export default {
         return false;
       }
 
-      this.persistLocalDraft();
       this.isSubmitting = true;
       try {
         const payload = this.buildPayload('draft');
@@ -496,7 +369,6 @@ export default {
           if (responseProductUuid) {
             this.draftProductUuid = responseProductUuid;
           }
-          this.persistLocalDraft();
           this.showToast('success', response.data.message || 'Form saved.');
           return true;
         }
@@ -544,6 +416,67 @@ export default {
     selectEmoji(option) {
       this.emoji = option.emoji;
       this.emojiBackground = option.bg;
+    },
+    async handleThumbnailUpload(croppedBlob) {
+      this.isSubmitting = true;
+      try {
+        const formData = new FormData();
+        formData.append('thumbnail', croppedBlob, 'thumbnail.jpg');
+
+        const response = await webService.post('/api/platform/upload-media', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        if (response.data.code === 200 && response.data.data?.thumbnail_url) {
+          const rawPath = response.data.data.thumbnail_url;
+          this.form.thumbnailUrl = `${env.BASE_URL}/${rawPath}`;
+          this.form.thumbnail = rawPath;
+          this.showToast('success', 'Thumbnail uploaded successfully.');
+        } else {
+          this.showToast('error', response.data.message || 'Failed to upload thumbnail.');
+        }
+      } catch (error) {
+        console.error('Error uploading thumbnail:', error);
+        this.showToast('error', error?.response?.data?.message || 'Failed to upload thumbnail.');
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+    handleThumbnailRemove() {
+      this.form.thumbnail = '';
+      this.form.thumbnailUrl = '';
+    },
+    async handleCheckoutBannerUpload(croppedBlob) {
+      this.isSubmitting = true;
+      try {
+        const formData = new FormData();
+        formData.append('checkout_banner', croppedBlob, 'checkout_banner.jpg');
+        if (this.draftProductUuid) {
+          formData.append('product_uuid', this.draftProductUuid);
+        }
+
+        const response = await webService.post('/api/platform/upload-media', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        if (response.data.code === 200 && response.data.data?.checkout_banner_url) {
+          const rawPath = response.data.data.checkout_banner_url;
+          this.form.checkoutBannerUrl = `${env.BASE_URL}/${rawPath}`;
+          this.form.checkoutBanner = rawPath;
+          this.showToast('success', 'Checkout banner uploaded successfully.');
+        } else {
+          this.showToast('error', response.data.message || 'Failed to upload checkout banner.');
+        }
+      } catch (error) {
+        console.error('Error uploading checkout banner:', error);
+        this.showToast('error', error?.response?.data?.message || 'Failed to upload checkout banner.');
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+    handleCheckoutBannerRemove() {
+      this.form.checkoutBanner = '';
+      this.form.checkoutBannerUrl = '';
     },
     onTitleInput() {
       if (!this.slugEditedManually || !this.form.slug.trim()) {
@@ -897,6 +830,14 @@ export default {
         payload.product_uuid = this.draftProductUuid;
       }
 
+      if (this.form.thumbnail) {
+        payload.thumbnail_url = this.form.thumbnail;
+      }
+
+      if (this.form.checkoutBanner) {
+        payload.checkout_banner_url = this.form.checkoutBanner;
+      }
+
       payload.builder_config = {
         ui_type: this.uiType,
         card_style: this.cardStyle,
@@ -937,15 +878,6 @@ export default {
 
       return payload;
     },
-    async saveDraft() {
-      this.resetValidationState();
-      if (!this.validateDraftForCurrentTab()) {
-        this.showToast('error', 'Please fix the highlighted fields.');
-        return false;
-      }
-      this.persistLocalDraft();
-      return true;
-    },
     async submitProduct() {
       this.resetValidationState();
       if (!this.validateForm()) {
@@ -961,7 +893,6 @@ export default {
 
         if (response.data.code === 200) {
           const productUuid = this.resolveProductUuidFromResponse(response.data) || this.draftProductUuid;
-          this.clearDraft();
           const successMessage = this.isEditMode ? 'Product updated successfully.' : 'Product created successfully.';
           this.showToast('success', response.data.message || successMessage);
           if (productUuid) {
@@ -1045,6 +976,12 @@ export default {
       this.cardStyle = builderConfig.card_style || payload.card_style || this.cardStyle;
       this.emoji = builderConfig.preview_emoji || payload.preview_emoji || this.emoji;
       this.emojiBackground = builderConfig.preview_background || payload.preview_background || this.emojiBackground;
+      const thumbRaw = payload.thumbnail_url || builderConfig.thumbnail || payload.thumbnail || '';
+      this.form.thumbnail = thumbRaw;
+      this.form.thumbnailUrl = thumbRaw ? `${env.BASE_URL}/${thumbRaw}` : '';
+      const bannerRaw = payload.checkout_banner_url || builderConfig.checkout_banner || payload.checkout_banner || '';
+      this.form.checkoutBanner = bannerRaw;
+      this.form.checkoutBannerUrl = bannerRaw ? `${env.BASE_URL}/${bannerRaw}` : '';
       this.draftProductUuid = payload.product_uuid || '';
 
       const collectFields = builderConfig.collect_fields || payload.collect_fields;
@@ -1128,11 +1065,14 @@ export default {
               :previewMode="previewMode"
               :previewHeadline="previewHeadline"
               :inputClasses="inputClasses"
+              :thumbnailUrl="form.thumbnailUrl"
               @input:title="onTitleInput"
               @input:subtitle="onShortDescriptionInput"
               @input:ctaText="validateCtaText"
               @select:cardStyle="selectCardStyle"
               @select:emoji="selectEmoji"
+              @upload:thumbnail="handleThumbnailUpload"
+              @remove:thumbnail="handleThumbnailRemove"
               @switch:previewMode="switchPreviewMode"
               @toast="showToast"
               @shortDescriptionLength="shortDescriptionLength"
@@ -1147,6 +1087,8 @@ export default {
               :addFieldOptions="addFieldOptions"
               :inputClasses="inputClasses"
               :textareaClasses="textareaClasses"
+              :checkoutBannerUrl="form.checkoutBannerUrl"
+              :isSubmitting="isSubmitting"
               @input:headline="validateDescription"
               @input:description="validateDescription"
               @toggle:isFree="toggleFreeProduct"
@@ -1156,6 +1098,9 @@ export default {
               @input:fileUrl="validateFileUrl"
               @add:collectField="addCollectField"
               @remove:collectField="removeCollectField"
+              @upload:checkoutBanner="handleCheckoutBannerUpload"
+              @remove:checkoutBanner="handleCheckoutBannerRemove"
+              @toast="showToast"
             />
 
             <product-options-tab
@@ -1225,7 +1170,7 @@ export default {
 
           <div v-show="previewMode === 'checkout'" class="ap2-preview-wrap">
             <div class="ap2-checkout-preview">
-              <div class="ap2-checkout-banner" :style="{ background: emojiBackground }">{{ emoji }}</div>
+              <div class="ap2-checkout-banner" :style="form.checkoutBannerUrl ? { backgroundImage: 'url(' + form.checkoutBannerUrl + ')', backgroundSize: 'cover', backgroundPosition: 'center' } : { background: emojiBackground }">{{ form.checkoutBannerUrl ? '' : emoji }}</div>
               <div class="ap2-checkout-body">
                 <div class="ap2-checkout-title">{{ previewHeadline }}</div>
                 <div class="ap2-checkout-desc">{{ previewDescription }}</div>

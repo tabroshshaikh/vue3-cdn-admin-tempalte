@@ -1,3 +1,5 @@
+const { env } = await import(`/src/js/config/env.js?v=${v}`);
+
 const defaultEmojiBackground = 'linear-gradient(135deg,#5B4FE9,#A78BFA)';
 const defaultBadgeColor = '#10B981';
 const legacyBadgeColors = {
@@ -311,6 +313,10 @@ export function createProductForm() {
     serviceMaxBookingsPerDay: '',
     serviceAdvanceBookingDays: '30',
     serviceMeetingUrl: '',
+    thumbnail: '',
+    thumbnailUrl: '',
+    checkoutBanner: '',
+    checkoutBannerUrl: '',
     cardButtonColor: '#5B4FE9',
     cardBadgeEnabled: true,
     badge_text: 'BESTSELLER',
@@ -366,33 +372,6 @@ export function createProductForm() {
     emojiBackground: defaultEmojiBackground,
     draftProductUuid: '',
   };
-
-  function draftStorageKey() {
-    return 'creator_add_product_draft';
-  }
-
-  function persistLocalDraft() {
-    try {
-      const payload = buildPayload('draft');
-      payload._local_saved_at = Date.now();
-      localStorage.setItem(draftStorageKey(), JSON.stringify(payload));
-      return true;
-    } catch (err) {
-      console.warn('Unable to save local draft', err);
-      return false;
-    }
-  }
-
-  function clearDraft() {
-    try {
-      localStorage.removeItem(draftStorageKey());
-      state.draftProductUuid = '';
-      return true;
-    } catch (err) {
-      console.warn('Unable to clear draft', err);
-      return false;
-    }
-  }
 
   function hydrateFromPayload(payload) {
     if (!payload || typeof payload !== 'object') return;
@@ -451,6 +430,9 @@ export function createProductForm() {
     state.cardStyle = builderConfig.card_style || payload.card_style || state.cardStyle;
     state.emoji = builderConfig.preview_emoji || payload.preview_emoji || state.emoji;
     state.emojiBackground = builderConfig.preview_background || payload.preview_background || state.emojiBackground;
+    const bannerRaw = payload.checkout_banner_url || builderConfig.checkout_banner || payload.checkout_banner || '';
+    form.checkoutBanner = bannerRaw;
+    form.checkoutBannerUrl = bannerRaw ? `${env.BASE_URL}/${bannerRaw}` : '';
     state.draftProductUuid = payload.product_uuid || state.draftProductUuid;
   }
 
@@ -498,6 +480,14 @@ export function createProductForm() {
     };
 
     if (state.draftProductUuid) payload.product_uuid = state.draftProductUuid;
+
+    if (form.thumbnail) {
+      payload.thumbnail_url = form.thumbnail;
+    }
+
+    if (form.checkoutBanner) {
+      payload.checkout_banner_url = form.checkoutBanner;
+    }
 
     payload.builder_config = {
       ui_type: state.uiType,

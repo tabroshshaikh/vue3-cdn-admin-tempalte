@@ -3360,6 +3360,14 @@ span.flatpickr-weekday {
         background-color: var(--color-error-500);
     }
 
+    .bg-error-600 {
+        background-color: var(--color-error-600);
+    }
+
+    .hover\:bg-error-600:hover {
+        background-color: var(--color-error-600);
+    }
+
     .bg-gray-50 {
         background-color: var(--color-gray-50);
     }
