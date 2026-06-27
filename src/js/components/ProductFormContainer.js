@@ -501,9 +501,9 @@ export default {
         if (response.data.code === 200) {
           const filePath = response.data.data?.file_url || response.data.data?.url || '';
           if (filePath) {
-            this.form.fileUrl = filePath;
+            this.form.fileUrl = '';
             this.form.productFileUrl = `${env.BASE_URL}/${filePath}`;
-            this.form.fileName = file.name;
+            this.form.fileName = '';
             this.showToast('success', 'File uploaded successfully.');
           } else {
             this.showToast('error', 'Failed to get file URL from response.');
@@ -958,8 +958,8 @@ export default {
         card_button_color: this.form.cardButtonColor || '#5B4FE9',
         headline: this.form.headline.trim(),
         file_delivery_type: this.form.fileDeliveryType,
-        file_url: this.form.fileUrl.trim() || null,
-        file_label: this.form.fileName.trim() || null,
+        file_url: this.form.fileDeliveryType === 'upload' ? this.form.fileUrl.trim() : null,
+        file_label: this.form.fileDeliveryType === 'upload' ? this.form.fileName.trim() : null,
         external_url: this.form.externalUrl.trim() || null,
         external_label: this.form.externalLabel.trim() || null,
         publish_immediately: this.form.publishImmediately,
@@ -1207,6 +1207,8 @@ export default {
               :inputClasses="inputClasses"
               :textareaClasses="textareaClasses"
               :uiType="uiType"
+              :showTypeSettings="showTypeSettings"
+              :typeSettingsTitle="typeSettingsTitle"
               :checkoutBannerUrl="form.checkoutBannerUrl"
               :isSubmitting="isSubmitting"
               @input:headline="validateDescription"
@@ -1220,6 +1222,16 @@ export default {
               @input:externalUrl="validateExternalUrl"
               @input:externalLabel="() => {}"
               @toggle:externalShowAfterPurchase="() => {}"
+              @input:leadMagnetCtaLabel="() => {}"
+              @input:leadMagnetSuccessMessage="() => {}"
+              @input:leadMagnetRedirectUrl="validateLeadMagnetRedirectUrl"
+              @input:serviceSessionDuration="() => {}"
+              @input:servicePlatform="() => {}"
+              @input:serviceBufferBefore="() => {}"
+              @input:serviceBufferAfter="() => {}"
+              @input:serviceMaxBookingsPerDay="() => {}"
+              @input:serviceAdvanceBookingDays="() => {}"
+              @input:serviceMeetingUrl="validateServiceMeetingUrl"
               @add:collectField="addCollectField"
               @remove:collectField="removeCollectField"
               @upload:checkoutBanner="handleCheckoutBannerUpload"
@@ -1234,8 +1246,6 @@ export default {
               :form="form"
               :validation="validation"
               :uiType="uiType"
-              :showTypeSettings="showTypeSettings"
-              :typeSettingsTitle="typeSettingsTitle"
               :inputClasses="inputClasses"
               :textareaClasses="textareaClasses"
               @input:emailSubject="() => {}"
@@ -1251,19 +1261,6 @@ export default {
               @toggle:orderBumps="() => {}"
               @toggle:affiliateShare="() => {}"
               @toggle:upsellAfterPurchase="() => {}"
-              @input:externalUrl="validateExternalUrl"
-              @input:externalLabel="() => {}"
-              @toggle:externalShowAfterPurchase="() => {}"
-              @input:leadMagnetCtaLabel="() => {}"
-              @input:leadMagnetSuccessMessage="() => {}"
-              @input:leadMagnetRedirectUrl="validateLeadMagnetRedirectUrl"
-              @input:serviceSessionDuration="() => {}"
-              @input:servicePlatform="() => {}"
-              @input:serviceBufferBefore="() => {}"
-              @input:serviceBufferAfter="() => {}"
-              @input:serviceMaxBookingsPerDay="() => {}"
-              @input:serviceAdvanceBookingDays="() => {}"
-              @input:serviceMeetingUrl="validateServiceMeetingUrl"
             />
           </div>
 

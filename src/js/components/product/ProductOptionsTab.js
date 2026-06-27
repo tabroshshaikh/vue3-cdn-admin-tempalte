@@ -4,8 +4,6 @@ export default {
     form: Object,
     validation: Object,
     uiType: String,
-    showTypeSettings: Boolean,
-    typeSettingsTitle: String,
     inputClasses: Function,
     textareaClasses: Function,
   },
@@ -23,19 +21,6 @@ export default {
     'toggle:orderBumps',
     'toggle:affiliateShare',
     'toggle:upsellAfterPurchase',
-    'input:externalUrl',
-    'input:externalLabel',
-    'toggle:externalShowAfterPurchase',
-    'input:leadMagnetCtaLabel',
-    'input:leadMagnetSuccessMessage',
-    'input:leadMagnetRedirectUrl',
-    'input:serviceSessionDuration',
-    'input:servicePlatform',
-    'input:serviceBufferBefore',
-    'input:serviceBufferAfter',
-    'input:serviceMaxBookingsPerDay',
-    'input:serviceAdvanceBookingDays',
-    'input:serviceMeetingUrl',
   ],
   template: `
     <div class="ap2-section-stack">
@@ -173,89 +158,6 @@ export default {
         </div>
       </div>
 
-      <div v-if="showTypeSettings" class="ap2-card">
-        <div class="ap2-card-header">
-          <h3 class="ap2-card-title">{{ typeSettingsTitle }}</h3>
-        </div>
-        <div class="ap2-card-body ap2-stack-md">
-          <template v-if="uiType === 'custom_service'">
-            <div class="ap2-grid-2">
-              <div>
-                <label class="ap2-label">Session Duration (mins)</label>
-                <input v-model="form.serviceSessionDuration" type="number" min="0" :class="inputClasses('serviceSessionDuration')" @input="$emit('input:serviceSessionDuration')" />
-              </div>
-              <div>
-                <label class="ap2-label">Platform</label>
-                <select v-model="form.servicePlatform" class="ap2-input" @change="$emit('input:servicePlatform')">
-                  <option>Zoom</option>
-                  <option>Google Meet</option>
-                  <option>Microsoft Teams</option>
-                  <option>Phone</option>
-                  <option>Custom</option>
-                </select>
-              </div>
-              <div>
-                <label class="ap2-label">Buffer Before (mins)</label>
-                <input v-model="form.serviceBufferBefore" type="number" min="0" :class="inputClasses('serviceBufferBefore')" @input="$emit('input:serviceBufferBefore')" />
-              </div>
-              <div>
-                <label class="ap2-label">Buffer After (mins)</label>
-                <input v-model="form.serviceBufferAfter" type="number" min="0" :class="inputClasses('serviceBufferAfter')" @input="$emit('input:serviceBufferAfter')" />
-              </div>
-              <div>
-                <label class="ap2-label">Max Bookings/Day</label>
-                <input v-model="form.serviceMaxBookingsPerDay" type="number" min="0" placeholder="Unlimited" :class="inputClasses('serviceMaxBookingsPerDay')" @input="$emit('input:serviceMaxBookingsPerDay')" />
-              </div>
-              <div>
-                <label class="ap2-label">Advance Booking Days</label>
-                <input v-model="form.serviceAdvanceBookingDays" type="number" min="0" :class="inputClasses('serviceAdvanceBookingDays')" @input="$emit('input:serviceAdvanceBookingDays')" />
-              </div>
-            </div>
-
-            <div>
-              <label class="ap2-label">Custom Meeting URL</label>
-              <input v-model="form.serviceMeetingUrl" type="url" placeholder="https://zoom.us/my/yourroom" :class="inputClasses('serviceMeetingUrl')" @input="$emit('input:serviceMeetingUrl')" />
-              <p v-if="validation.serviceMeetingUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.serviceMeetingUrl.message }}</p>
-            </div>
-          </template>
-
-          <template v-else-if="uiType === 'lead_magnet'">
-            <div>
-              <label class="ap2-label">CTA Button Label</label>
-              <input v-model="form.leadMagnetCtaLabel" type="text" placeholder="Get Free Access" :class="inputClasses('leadMagnetCtaLabel')" @input="$emit('input:leadMagnetCtaLabel')" />
-            </div>
-            <div>
-              <label class="ap2-label">Success Message</label>
-              <textarea v-model="form.leadMagnetSuccessMessage" rows="3" placeholder="Shown after email is submitted..." class="ap2-input ap2-textarea" @input="$emit('input:leadMagnetSuccessMessage')"></textarea>
-            </div>
-            <div>
-              <label class="ap2-label">Redirect URL</label>
-              <input v-model="form.leadMagnetRedirectUrl" type="url" placeholder="https://your-redirect-page.com" :class="inputClasses('leadMagnetRedirectUrl')" @input="$emit('input:leadMagnetRedirectUrl')" />
-              <p v-if="validation.leadMagnetRedirectUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.leadMagnetRedirectUrl.message }}</p>
-            </div>
-          </template>
-
-          <template v-else-if="uiType === 'external_link'">
-            <div>
-              <label class="ap2-label">Destination URL <span class="text-error-500">*</span></label>
-              <input v-model="form.externalUrl" type="url" placeholder="https://youtube.com/watch?v=..." :class="inputClasses('externalUrl')" @input="$emit('input:externalUrl')" />
-              <p v-if="validation.externalUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.externalUrl.message }}</p>
-            </div>
-            <div>
-              <label class="ap2-label">Link Label</label>
-              <input v-model="form.externalLabel" type="text" placeholder="e.g. Watch the Free Masterclass" :class="inputClasses('externalLabel')" @input="$emit('input:externalLabel')" />
-            </div>
-            <label class="ap2-toggle-row" :class="form.externalShowAfterPurchase ? 'active' : ''">
-              <div>
-                <p class="ap2-toggle-title">Show Link After Purchase</p>
-                <p class="ap2-toggle-subtitle">Display URL on the order confirmation page</p>
-              </div>
-              <input v-model="form.externalShowAfterPurchase" type="checkbox" class="sr-only" @change="$emit('toggle:externalShowAfterPurchase')" />
-              <span class="ap2-switch" :class="form.externalShowAfterPurchase ? 'on' : ''"><span></span></span>
-            </label>
-          </template>
-        </div>
-      </div>
     </div>
   `,
 };

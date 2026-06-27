@@ -12,6 +12,14 @@ export default {
       type: String,
       default: 'digital_download',
     },
+    showTypeSettings: {
+      type: Boolean,
+      default: false,
+    },
+    typeSettingsTitle: {
+      type: String,
+      default: '',
+    },
     checkoutBannerUrl: {
       type: String,
       default: '',
@@ -35,6 +43,16 @@ export default {
     'input:externalUrl',
     'input:externalLabel',
     'toggle:externalShowAfterPurchase',
+    'input:leadMagnetCtaLabel',
+    'input:leadMagnetSuccessMessage',
+    'input:leadMagnetRedirectUrl',
+    'input:serviceSessionDuration',
+    'input:servicePlatform',
+    'input:serviceBufferBefore',
+    'input:serviceBufferAfter',
+    'input:serviceMaxBookingsPerDay',
+    'input:serviceAdvanceBookingDays',
+    'input:serviceMeetingUrl',
     'upload:checkoutBanner',
     'remove:checkoutBanner',
     'upload:productFile',
@@ -351,35 +369,106 @@ export default {
         </div>
       </div>
 
-      <div v-if="uiType === 'external_link'" class="ap2-card">
+      <div v-if="showTypeSettings" class="ap2-card">
         <div class="ap2-card-header">
-          <h3 class="ap2-card-title">External Link</h3>
+          <h3 class="ap2-card-title">{{ typeSettingsTitle }}</h3>
         </div>
         <div class="ap2-card-body ap2-stack-md">
-          <div>
-            <label class="ap2-label">Destination URL <span class="text-error-500">*</span></label>
-            <input v-model="form.externalUrl" type="url" placeholder="https://example.com/your-link" :class="inputClasses('externalUrl')" @input="$emit('input:externalUrl')" />
-            <p v-if="validation.externalUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.externalUrl.message }}</p>
-          </div>
-          <div>
-            <label class="ap2-label">Link Label</label>
-            <input v-model="form.externalLabel" type="text" placeholder="e.g. Visit Website" class="ap2-input" @input="$emit('input:externalLabel')" />
-          </div>
-          <div>
-            <label class="ap2-label">Link after purchase</label>
-            <div class="ap2-stack-xs mt-1">
-              <label class="ap2-radio-row" :class="form.externalShowAfterPurchase ? 'active' : ''">
-                <input v-model="form.externalShowAfterPurchase" :value="true" type="radio" class="sr-only" @change="$emit('toggle:externalShowAfterPurchase')" />
-                <span class="ap2-radio-dot" :class="form.externalShowAfterPurchase ? 'checked' : ''"></span>
-                <span class="ap2-radio-text">Show on-screen after purchase</span>
-              </label>
-              <label class="ap2-radio-row" :class="!form.externalShowAfterPurchase ? 'active' : ''">
-                <input v-model="form.externalShowAfterPurchase" :value="false" type="radio" class="sr-only" @change="$emit('toggle:externalShowAfterPurchase')" />
-                <span class="ap2-radio-dot" :class="!form.externalShowAfterPurchase ? 'checked' : ''"></span>
-                <span class="ap2-radio-text">Send over email</span>
-              </label>
+          <template v-if="uiType === 'external_link'">
+            <div>
+              <label class="ap2-label">Destination URL <span class="text-error-500">*</span></label>
+              <input v-model="form.externalUrl" type="url" placeholder="https://example.com/your-link" :class="inputClasses('externalUrl')" @input="$emit('input:externalUrl')" />
+              <p class="ap2-hint">Where buyers will be sent after clicking. This is the main link you're sharing or selling access to.</p>
+              <p v-if="validation.externalUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.externalUrl.message }}</p>
             </div>
-          </div>
+            <div>
+              <label class="ap2-label">Link Label</label>
+              <input v-model="form.externalLabel" type="text" placeholder="e.g. Visit Website" class="ap2-input" @input="$emit('input:externalLabel')" />
+              <p class="ap2-hint">Short text shown on the button or confirmation page (e.g. "Watch Now", "Visit Website"). Leave blank to use the URL itself.</p>
+            </div>
+            <div>
+              <label class="ap2-label">After Purchase</label>
+              <div class="ap2-stack-xs mt-1">
+                <label class="ap2-radio-row" :class="form.externalShowAfterPurchase ? 'active' : ''">
+                  <input v-model="form.externalShowAfterPurchase" :value="true" type="radio" class="sr-only" @change="$emit('toggle:externalShowAfterPurchase')" />
+                  <span class="ap2-radio-dot" :class="form.externalShowAfterPurchase ? 'checked' : ''"></span>
+                  <span class="ap2-radio-text">Show on-screen after purchase</span>
+                </label>
+                <label class="ap2-radio-row" :class="!form.externalShowAfterPurchase ? 'active' : ''">
+                  <input v-model="form.externalShowAfterPurchase" :value="false" type="radio" class="sr-only" @change="$emit('toggle:externalShowAfterPurchase')" />
+                  <span class="ap2-radio-dot" :class="!form.externalShowAfterPurchase ? 'checked' : ''"></span>
+                  <span class="ap2-radio-text">Send over email</span>
+                </label>
+              </div>
+              <p class="ap2-hint">Choose whether the link appears immediately on the thank-you screen or is sent via email.</p>
+            </div>
+          </template>
+
+          <template v-else-if="uiType === 'lead_magnet'">
+            <div>
+              <label class="ap2-label">CTA Button Label</label>
+              <input v-model="form.leadMagnetCtaLabel" type="text" placeholder="Get Free Access" :class="inputClasses('leadMagnetCtaLabel')" @input="$emit('input:leadMagnetCtaLabel')" />
+              <p class="ap2-hint">Text shown on the submit button. Common choices: "Get Free Access", "Download Now", "Send Me the Guide".</p>
+            </div>
+            <div>
+              <label class="ap2-label">Success Message</label>
+              <textarea v-model="form.leadMagnetSuccessMessage" rows="3" placeholder="Shown after email is submitted..." class="ap2-input ap2-textarea" @input="$emit('input:leadMagnetSuccessMessage')"></textarea>
+              <p class="ap2-hint">Message displayed to the user right after they submit their email. Thank them or explain what happens next.</p>
+            </div>
+            <div>
+              <label class="ap2-label">Redirect URL</label>
+              <input v-model="form.leadMagnetRedirectUrl" type="url" placeholder="https://your-redirect-page.com" :class="inputClasses('leadMagnetRedirectUrl')" @input="$emit('input:leadMagnetRedirectUrl')" />
+              <p class="ap2-hint">Optional. If set, buyers will be sent here after submitting their email instead of seeing the success message.</p>
+              <p v-if="validation.leadMagnetRedirectUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.leadMagnetRedirectUrl.message }}</p>
+            </div>
+          </template>
+
+          <template v-else-if="uiType === 'custom_service'">
+            <div class="ap2-grid-2">
+              <div>
+                <label class="ap2-label">Session Duration (mins)</label>
+                <input v-model="form.serviceSessionDuration" type="number" min="0" :class="inputClasses('serviceSessionDuration')" @input="$emit('input:serviceSessionDuration')" />
+                <p class="ap2-hint">How long each meeting or session lasts, in minutes.</p>
+              </div>
+              <div>
+                <label class="ap2-label">Platform</label>
+                <select v-model="form.servicePlatform" class="ap2-input" @change="$emit('input:servicePlatform')">
+                  <option>Zoom</option>
+                  <option>Google Meet</option>
+                  <option>Microsoft Teams</option>
+                  <option>Phone</option>
+                  <option>Custom</option>
+                </select>
+                <p class="ap2-hint">Where the session will take place. Shown to buyers after purchase.</p>
+              </div>
+              <div>
+                <label class="ap2-label">Buffer Before (mins)</label>
+                <input v-model="form.serviceBufferBefore" type="number" min="0" :class="inputClasses('serviceBufferBefore')" @input="$emit('input:serviceBufferBefore')" />
+                <p class="ap2-hint">Free time before each session for preparation. Set to 0 for no buffer.</p>
+              </div>
+              <div>
+                <label class="ap2-label">Buffer After (mins)</label>
+                <input v-model="form.serviceBufferAfter" type="number" min="0" :class="inputClasses('serviceBufferAfter')" @input="$emit('input:serviceBufferAfter')" />
+                <p class="ap2-hint">Free time after each session for notes or breaks.</p>
+              </div>
+              <div>
+                <label class="ap2-label">Max Bookings/Day</label>
+                <input v-model="form.serviceMaxBookingsPerDay" type="number" min="0" placeholder="Unlimited" :class="inputClasses('serviceMaxBookingsPerDay')" @input="$emit('input:serviceMaxBookingsPerDay')" />
+                <p class="ap2-hint">Cap the number of sessions per day. Leave blank for unlimited availability.</p>
+              </div>
+              <div>
+                <label class="ap2-label">Advance Booking Days</label>
+                <input v-model="form.serviceAdvanceBookingDays" type="number" min="0" :class="inputClasses('serviceAdvanceBookingDays')" @input="$emit('input:serviceAdvanceBookingDays')" />
+                <p class="ap2-hint">How far in advance buyers can book (e.g. 30 = up to 30 days ahead).</p>
+              </div>
+            </div>
+            <div>
+              <label class="ap2-label">Custom Meeting URL</label>
+              <input v-model="form.serviceMeetingUrl" type="url" placeholder="https://zoom.us/my/yourroom" :class="inputClasses('serviceMeetingUrl')" @input="$emit('input:serviceMeetingUrl')" />
+              <p class="ap2-hint">Optional. Provide your own meeting link instead of generating one. Buyers receive this after purchase.</p>
+              <p v-if="validation.serviceMeetingUrl.status === 'error'" class="mt-1 text-xs text-error-500">{{ validation.serviceMeetingUrl.message }}</p>
+            </div>
+          </template>
         </div>
       </div>
 
